@@ -4,5 +4,7 @@ config/github-copilot/
 config/configstore/
 .git-rewrite/
 
+.idea
+
 # macOS
 .DS_Store
