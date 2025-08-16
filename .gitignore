@@ -1,0 +1,8 @@
+# Ignore config directories with cached/generated content
+config/yarn/
+config/github-copilot/
+config/configstore/
+.git-rewrite/
+
+# macOS
+.DS_Store

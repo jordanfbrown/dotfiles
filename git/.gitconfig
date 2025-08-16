@@ -1,0 +1,17 @@
+[alias]
+	st = status
+	ci = commit
+	br = branch
+[user]
+	email = ***REMOVED***
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINxyJ2klc6fpEIYomxSbsXMG50pRPBYUN0cuLzn6/Eg+
+[url "ssh://git@github.com/"]
+	insteadOf = https://github.com/
+[gpg]
+  format = ssh
+
+[gpg "ssh"]
+  program = "/Applications/1Password.app/Contents/MacOS/op-ssh-sign"
+
+[commit]
+  gpgsign = true
