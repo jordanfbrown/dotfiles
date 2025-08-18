@@ -15,3 +15,5 @@
 
 [commit]
   gpgsign = true
+[core]
+	excludesfile = /Users/jordan.brown/.gitignore_global
