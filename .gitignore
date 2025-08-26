@@ -8,3 +8,4 @@ config/configstore/
 
 # macOS
 .DS_Store
+tmux/.tmux/plugins/

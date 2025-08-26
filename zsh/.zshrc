@@ -43,6 +43,7 @@ zstyle ':completion:*' menu select
 setopt AUTO_MENU        # Show completion menu on successive tab press
 setopt COMPLETE_IN_WORD # Allow completion in the middle of a word
 setopt ALWAYS_TO_END    # Move cursor to end of word after completion
+setopt AUTO_CD          # Allow navigation by typing directory names
 
 # =============================================================================
 # PLUGINS AND EXTENSIONS
@@ -222,7 +223,17 @@ gcj() {
 }
 
 b() {
-  git checkout -b jb/${1} 2> /dev/null || git checkout jb/${1}
+  local branch_name
+  
+  # Check if argument contains letters/hyphens (like proj-411 or hhmm-400)
+  if [[ "$1" =~ [a-zA-Z-] ]]; then
+    branch_name="jb/$1"
+  else
+    # Default to jb/hhmm-${number} format for bare numbers
+    branch_name="jb/hhmm-$1"
+  fi
+  
+  git checkout -b "$branch_name" 2> /dev/null || git checkout "$branch_name"
 }
 
 # =============================================================================
