@@ -74,6 +74,9 @@ export PATH="$HOME/.local/bin:$PATH"
 export NEXUS_USERNAME="dev-read"
 export JIRA_EMAIL="***REMOVED***"
 
+# Disable auto updater for Claude Code
+export DISABLE_AUTOUPDATER=1
+
 # =============================================================================
 # GIT ALIASES
 # =============================================================================
@@ -102,6 +105,8 @@ alias gst='git status'
 alias gss='git status --short'
 alias gwip='git add -A; git rm $(git ls-files --deleted) 2> /dev/null; git commit --no-verify --no-gpg-sign --message "--wip-- [skip ci]"'
 alias gunwip='git rev-list --max-count=1 --format="%s" HEAD | grep -q "\--wip--" && git reset HEAD~1'
+alias gcm='git commit -m'
+alias grh='git reset HEAD~1'
 
 # =============================================================================
 # SHELL ALIASES
@@ -132,6 +137,8 @@ alias staging-acls='mise exec --cd ~/wealthsimple/scripts/generate_staging_acls 
 alias git-file-history="~/wealthsimple/scripts/git_file_history/analyze_file_history.rb"
 alias mermaid-view="~/wealthsimple/scripts/mermaid-view"
 alias cpr='JIRA_API_KEY=$(op read op://Employee/JIRA_API_KEY/credential) GITHUB_TOKEN=$(gh auth token) ~/wealthsimple/scripts/create_pull_request/create_pull_request.rb'
+alias ft="~/wealthsimple/scripts/run-femr-test.js"
+alias fkl="git stash && gco main && git pull && git stash apply && bundle && bundle exec rake db:migrate && git stash apply"
 
 # =============================================================================
 # UTILITY ALIASES
@@ -258,6 +265,7 @@ nxa() {
 source "$HOME/.git-worktree-functions.zsh"
 source /Users/jordan.brown/.config/wealthsimple/direnv/config.zsh
 source $(brew --prefix)/share/ws-cli/shell/activate.zsh
+eval "$(direnv hook zsh)"
 eval "$(mise activate zsh)"
 
 # =============================================================================
