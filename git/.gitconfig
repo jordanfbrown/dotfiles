@@ -1,12 +1,15 @@
 [alias]
 	st = status
 	ci = commit
-	br = branch
+  br = branch
+
 [user]
 	email = ***REMOVED***
-	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINxyJ2klc6fpEIYomxSbsXMG50pRPBYUN0cuLzn6/Eg+
+	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDdlTFCSr69nvLX1DBXhgIIxSFrFWpK5JzU7qzSMY5H8
+
 [url "ssh://git@github.com/"]
-	insteadOf = https://github.com/
+  insteadOf = https://github.com/
+
 [gpg]
   format = ssh
 
@@ -15,5 +18,9 @@
 
 [commit]
   gpgsign = true
+
 [core]
-	excludesfile = /Users/jordan.brown/.gitignore
+  excludesfile = /Users/jordan.brown/.gitignore
+
+[diff]
+  external = difft

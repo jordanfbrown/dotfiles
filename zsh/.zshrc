@@ -77,6 +77,14 @@ export JIRA_EMAIL="***REMOVED***"
 # Disable auto updater for Claude Code
 export DISABLE_AUTOUPDATER=1
 
+export FORT_KNOX_GRPC_VERSION=1.72.0
+
+# https://github.com/ruby/openssl/issues/949
+export RUBYOPT="-r$HOME/.rubyopenssl_default_store.rb $RUBYOPT"
+
+export HIVE_TOKEN=***REMOVED***
+
+
 # =============================================================================
 # GIT ALIASES
 # =============================================================================
@@ -127,6 +135,7 @@ alias ag="ag --path-to-ignore ~/.ignore"
 alias be="bundle exec"
 alias s="be rspec"
 alias ftp="files-to-prompt"
+alias nx="pnpm nx"
 
 # =============================================================================
 # CUSTOM SCRIPT ALIASES
@@ -138,7 +147,8 @@ alias git-file-history="~/wealthsimple/scripts/git_file_history/analyze_file_his
 alias mermaid-view="~/wealthsimple/scripts/mermaid-view"
 alias cpr='JIRA_API_KEY=$(op read op://Employee/JIRA_API_KEY/credential) GITHUB_TOKEN=$(gh auth token) ~/wealthsimple/scripts/create_pull_request/create_pull_request.rb'
 alias ft="~/wealthsimple/scripts/run-femr-test.js"
-alias fkl="git stash && gco main && git pull && git stash apply && bundle && bundle exec rake db:migrate && git stash apply"
+alias fkl="git stash && gco main && git pull && git stash apply && bundle && bundle exec rake db:migrate"
+alias dl="~/wealthsimple/daily-log/dl"
 
 # =============================================================================
 # UTILITY ALIASES
@@ -272,3 +282,7 @@ eval "$(mise activate zsh)"
 # ENVIRONMENT CLEANUP
 # =============================================================================
 unset GITHUB_TOKEN
+
+# BEGIN wealthsimple reposerver
+source "$HOME/.local/share/ws-cli/rc/reposerver/env.sh"
+# END wealthsimple reposerver

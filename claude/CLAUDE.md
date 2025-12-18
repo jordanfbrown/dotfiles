@@ -80,3 +80,15 @@ Always adapt to the specific project's conventions rather than imposing global p
 - Never commit secrets, API keys, or sensitive data
 - Follow security best practices for the specific language/framework
 - Be cautious with file permissions and access patterns
+
+## NPM 401 errors
+- If we receive the following error: Error: error Error: https://wealthsimple-711984989527.d.codeartifact.us-east-1.amazonaws.com/npm/helium3/@apollo/cache-control-types/-/cache-control-types-1.0.3.tgz: Request failed "401 Unauthorized"
+- We need to login to aws codeartifact:
+
+```
+# will require user to do something in browser
+aws sso login --profile=package-puller 
+
+# after aws sso login completes
+aws codeartifact login --profile=package-puller --tool npm --domain wealthsimple --repository helium3
+```
