@@ -109,7 +109,8 @@ wt() {
   fi
 
   # Create new worktree
-  _wt_yellow "Creating new worktree: $branch"
+  local current_branch=$(git branch --show-current)
+  _wt_yellow "Creating $branch from $current_branch..."
 
   # Fetch latest from origin
   git fetch origin
@@ -122,12 +123,15 @@ wt() {
     # Remote branch exists
     git worktree add -b "$branch" "$worktree_path" "origin/$branch"
   else
-    # Create new branch from origin/main
-    git worktree add -b "$branch" "$worktree_path" origin/main
+    # Create new branch from current HEAD
+    git worktree add -b "$branch" "$worktree_path"
   fi
 
-  # Copy node_modules in background with copy-on-write (assumes APFS)
-  if [[ -d "$main_path/node_modules" ]]; then
+  # Handle node_modules: pnpm install is faster than copying, npm/yarn benefit from copy
+  if [[ -f "$worktree_path/pnpm-lock.yaml" ]]; then
+    _wt_yellow "Running pnpm install in background..."
+    (cd "$worktree_path" && pnpm install) &
+  elif [[ -d "$main_path/node_modules" ]]; then
     _wt_yellow "Copying node_modules in background..."
     /bin/cp -Rc "$main_path/node_modules" "$worktree_path/node_modules" &
   fi
@@ -164,24 +168,36 @@ wt() {
 }
 
 # wtd - Delete a worktree
-# Usage: wtd <identifier>
+# Usage: wtd [identifier]
+#   wtd          - FZF selection from existing worktrees
+#   wtd 123      - Delete jb-hhmm-123 worktree
 wtd() {
   local identifier="$1"
-
-  if [[ -z "$identifier" ]]; then
-    echo "Usage: wtd <branch-identifier>"
-    echo "Removes worktree and deletes local branch"
-    return 1
-  fi
-
-  local branch=$(_wt_to_branch "$identifier")
   local repo_parent=$(_wt_repo_parent)
-  local worktree_path="$repo_parent/$branch"
+  local worktree_path
+  local branch
+
+  # No args: FZF selection from existing worktrees (excluding main)
+  if [[ -z "$identifier" ]]; then
+    local worktrees=$(git worktree list --porcelain | grep '^worktree ' | awk '{print $2}' | grep -v '/main$')
+    local selected=$(echo "$worktrees" | fzf --prompt="Select worktree to delete: ")
+    [[ -z "$selected" ]] && return 0
+    worktree_path="$selected"
+    branch=$(basename "$selected")
+  else
+    branch=$(_wt_to_branch "$identifier")
+    worktree_path="$repo_parent/$branch"
+  fi
 
   if [[ ! -d "$worktree_path" ]]; then
     _wt_red "Worktree not found: $worktree_path"
     return 1
   fi
+
+  # Confirm deletion
+  echo -n "Delete $worktree_path? [y/N] "
+  read -q || { echo; return 0; }
+  echo
 
   # If we're in the worktree, move to main first
   if [[ "$PWD" == "$worktree_path"* ]]; then
