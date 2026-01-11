@@ -205,8 +205,11 @@ wtd() {
   fi
 
   _wt_yellow "Removing worktree: $worktree_path"
-  git worktree remove "$worktree_path" --force
+  # Move to tmp first (instant), then delete in background (slow but non-blocking)
+  local tmp_path="/tmp/worktree-delete-$RANDOM"
+  mv "$worktree_path" "$tmp_path"
   git worktree prune
+  rm -rf "$tmp_path" &
 
   # Delete the local branch
   git branch -D "$branch" 2>/dev/null && _wt_green "Deleted branch: $branch"
