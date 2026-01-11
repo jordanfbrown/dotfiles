@@ -21,7 +21,7 @@ _wt_open_ide() {
     rubymine "$dir"
   elif [[ -f "$dir/package.json" ]]; then
     webstorm "$dir"
-  elif [[ -f "$dir/build.gradle" || -f "$dir/build.gradle.kts" ]]; then
+  elif [[ -f "$dir/build.gradle" || -f "$dir/build.gradle.kts" || -f "$dir/pom.xml" ]]; then
     idea "$dir"
   fi
   # Otherwise: no IDE opened
@@ -65,31 +65,44 @@ _wt_main_path() {
   git rev-parse --show-toplevel 2>/dev/null
 }
 
+# Find a worktree globally across all repos in ~/wealthsimple
+_wt_find_global() {
+  local branch="$1"
+  for repo_dir in ~/wealthsimple/*/; do
+    local candidate="$repo_dir$branch"
+    if [[ -d "$candidate" && -e "$candidate/.git" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# List all worktrees across all repos in ~/wealthsimple
+_wt_list_all_worktrees() {
+  for repo_dir in ~/wealthsimple/*/main; do
+    if [[ -d "$repo_dir/.git" ]]; then
+      git -C "$repo_dir" worktree list --porcelain 2>/dev/null | grep '^worktree ' | awk '{print $2}'
+    fi
+  done
+}
+
 # =============================================================================
 # MAIN FUNCTIONS
 # =============================================================================
 
 # wt - Create or switch to a worktree
 # Usage: wt [identifier]
-#   wt           - FZF selection from existing worktrees
-#   wt 123       - Create/switch to jb-hhmm-123
+#   wt           - FZF selection from ALL worktrees globally
+#   wt 123       - Switch to jb-hhmm-123 (global search) or create in current repo
 #   wt hhmm-123  - Create/switch to jb-hhmm-123
 #   wt feature-x - Create/switch to jb-feature-x
 wt() {
   local identifier="$1"
 
-  # Ensure we're in a git repo
-  local main_path=$(_wt_main_path)
-  if [[ -z "$main_path" ]]; then
-    _wt_red "Not in a git repository"
-    return 1
-  fi
-
-  local repo_parent=$(_wt_repo_parent)
-
-  # No args: FZF selection from existing worktrees
+  # No args: FZF selection from ALL worktrees globally (excluding main)
   if [[ -z "$identifier" ]]; then
-    local worktrees=$(git worktree list --porcelain | grep '^worktree ' | awk '{print $2}')
+    local worktrees=$(_wt_list_all_worktrees | grep -v '/main$')
     local selected=$(echo "$worktrees" | fzf --prompt="Select worktree: ")
     [[ -z "$selected" ]] && return 0
     cd "$selected"
@@ -98,33 +111,51 @@ wt() {
   fi
 
   local branch=$(_wt_to_branch "$identifier")
-  local worktree_path="$repo_parent/$branch"
 
-  # If worktree exists, just switch to it
-  if [[ -d "$worktree_path" ]]; then
-    _wt_green "Switching to existing worktree: $worktree_path"
-    cd "$worktree_path"
-    _wt_open_ide "$worktree_path"
+  # Search globally for existing worktree
+  local global_match=$(_wt_find_global "$branch")
+  if [[ -n "$global_match" ]]; then
+    _wt_green "Switching to existing worktree: $global_match"
+    cd "$global_match"
+    _wt_open_ide "$global_match"
     return 0
   fi
 
+  # No global match - need to create
+  local main_path=$(_wt_main_path)
+  local repo_parent
+  local worktree_path
+
+  if [[ -z "$main_path" ]]; then
+    # Not in a repo - let user pick which repo to create in
+    local repos=$(find ~/wealthsimple -maxdepth 2 -name main -type d 2>/dev/null | grep '/main$')
+    local selected=$(echo "$repos" | fzf --prompt="Create '$branch' in which repo? ")
+    [[ -z "$selected" ]] && return 0
+    main_path="$selected"
+    repo_parent="$(dirname "$selected")"
+    worktree_path="$repo_parent/$branch"
+  else
+    repo_parent=$(_wt_repo_parent)
+    worktree_path="$repo_parent/$branch"
+  fi
+
   # Create new worktree
-  local current_branch=$(git branch --show-current)
+  local current_branch=$(git -C "$main_path" branch --show-current)
   _wt_yellow "Creating $branch from $current_branch..."
 
   # Fetch latest from origin
-  git fetch origin
+  git -C "$main_path" fetch origin
 
   # Check if branch exists locally or remotely
-  if git show-ref --verify --quiet "refs/heads/$branch"; then
+  if git -C "$main_path" show-ref --verify --quiet "refs/heads/$branch"; then
     # Local branch exists
-    git worktree add "$worktree_path" "$branch"
-  elif git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    git -C "$main_path" worktree add "$worktree_path" "$branch"
+  elif git -C "$main_path" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
     # Remote branch exists
-    git worktree add -b "$branch" "$worktree_path" "origin/$branch"
+    git -C "$main_path" worktree add -b "$branch" "$worktree_path" "origin/$branch"
   else
     # Create new branch from current HEAD
-    git worktree add -b "$branch" "$worktree_path"
+    git -C "$main_path" worktree add -b "$branch" "$worktree_path"
   fi
 
   # Handle node_modules: pnpm install is faster than copying, npm/yarn benefit from copy
@@ -177,22 +208,34 @@ wtd() {
   local worktree_path
   local branch
 
-  # No args: FZF selection from existing worktrees (excluding main)
+  # No args: FZF selection from ALL worktrees globally (excluding main)
   if [[ -z "$identifier" ]]; then
-    local worktrees=$(git worktree list --porcelain | grep '^worktree ' | awk '{print $2}' | grep -v '/main$')
+    local worktrees=$(_wt_list_all_worktrees | grep -v '/main$')
     local selected=$(echo "$worktrees" | fzf --prompt="Select worktree to delete: ")
     [[ -z "$selected" ]] && return 0
     worktree_path="$selected"
     branch=$(basename "$selected")
   else
     branch=$(_wt_to_branch "$identifier")
-    worktree_path="$repo_parent/$branch"
+    # Search globally for the worktree
+    local global_match=$(_wt_find_global "$branch")
+    if [[ -n "$global_match" ]]; then
+      worktree_path="$global_match"
+    elif [[ -n "$repo_parent" ]]; then
+      worktree_path="$repo_parent/$branch"
+    else
+      _wt_red "Worktree '$branch' not found"
+      return 1
+    fi
   fi
 
   if [[ ! -d "$worktree_path" ]]; then
     _wt_red "Worktree not found: $worktree_path"
     return 1
   fi
+
+  # Get the repo's main directory for git commands
+  local repo_main="$(dirname "$worktree_path")/main"
 
   # Confirm deletion
   echo -n "Delete $worktree_path? [y/N] "
@@ -201,18 +244,18 @@ wtd() {
 
   # If we're in the worktree, move to main first
   if [[ "$PWD" == "$worktree_path"* ]]; then
-    cd "$repo_parent/main"
+    cd "$repo_main"
   fi
 
   _wt_yellow "Removing worktree: $worktree_path"
   # Move to tmp first (instant), then delete in background (slow but non-blocking)
   local tmp_path="/tmp/worktree-delete-$RANDOM"
   mv "$worktree_path" "$tmp_path"
-  git worktree prune
+  git -C "$repo_main" worktree prune
   rm -rf "$tmp_path" &
 
   # Delete the local branch
-  git branch -D "$branch" 2>/dev/null && _wt_green "Deleted branch: $branch"
+  git -C "$repo_main" branch -D "$branch" 2>/dev/null && _wt_green "Deleted branch: $branch"
 
   _wt_green "Worktree removed successfully"
 }
