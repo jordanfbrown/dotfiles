@@ -19,6 +19,19 @@
       "Bash(git :*)",
       "Bash(git rev-parse --abbrev-ref origin/HEAD:*)",
       "Bash(gh :*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr api:*)",
+      "Bash(unset :*)",
+      "Bash(unset GITHUB_TOKEN)",
+      "Bash(unset GITHUB_TOKEN && gh :*)",
+      "Bash(unset GITHUB_TOKEN && gh pr list:*)",
+      "Bash(unset GITHUB_TOKEN && gh pr view:*)",
+      "Bash(unset GITHUB_TOKEN && gh pr diff:*)",
+      "Bash(unset GITHUB_TOKEN && gh pr checks:*)",
+      "Bash(unset GITHUB_TOKEN && gh api:*)",
       "Bash(docker ps:*)",
       "Bash(docker logs:*)",
       "Bash(docker inspect:*)",
@@ -41,6 +54,10 @@
       "Bash(sm3:*)",
       "Bash(./scripts/*)",
       "Bash(claude doctor)",
+      "Bash(tree:*)",
+      "Bash(bundle exec rspec:*)",
+      "Bash(bundle exec rubocop:*)",
+      "Bash(bundle exec rake:*)",
       "WebSearch",
       "WebFetch(domain:temporal.io)",
       "WebFetch(domain:docs.temporal.io)",
@@ -63,7 +80,8 @@
       "mcp__glean__search_glean",
       "mcp__temporal__fetch_temporal_workflows",
       "mcp__temporal__fetch_workflow_history",
-      "Bash(* jira issue view *)"
+      "Bash(* jira issue view *)",
+      "Bash(ruby -c :*)"
     ],
     "deny": [
       "Read(~/**)",
@@ -159,7 +177,6 @@
     ],
     "defaultMode": "acceptEdits"
   },
-  "model": "opus",
   "hooks": {
     "Stop": [
       {
@@ -192,5 +209,6 @@
     "graphite@ws-claude-marketplace": true,
     "typescript-lsp@claude-plugins-official": true
   },
-  "alwaysThinkingEnabled": true
+  "alwaysThinkingEnabled": true,
+  "model": "opus"
 }

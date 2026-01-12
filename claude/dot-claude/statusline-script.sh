@@ -1,33 +1,51 @@
 #!/bin/bash
 
-# Read JSON input from stdin
-input=$(cat)
+# Read JSON from stdin (use cat, not read -r, to capture all input)
+json=$(cat)
 
-# Extract data from JSON
-current_dir=$(echo "$input" | jq -r '.workspace.current_dir')
-model_name=$(echo "$input" | jq -r '.model.display_name')
+# Debug: log raw JSON to file (uncomment to debug)
+# echo "$json" >> /tmp/claude-statusline-debug.json
 
-# Display directory name in blue
-printf '\033[34m%s\033[0m' "$(basename "$current_dir")"
+# Extract values from JSON
+model=$(echo "$json" | jq -r '.model.display_name // "unknown"')
+cwd=$(echo "$json" | jq -r '.workspace.current_dir // .cwd // "unknown"' | sed "s|^$HOME|~|")
 
-# Check if we're in a git repository
-if git -C "$current_dir" rev-parse --git-dir >/dev/null 2>&1; then
-    # Get current branch, tag, or commit hash
-    branch=$(git -C "$current_dir" branch --show-current 2>/dev/null || \
-             git -C "$current_dir" describe --tags --exact-match 2>/dev/null || \
-             git -C "$current_dir" rev-parse --short HEAD)
-    
-    # Check git status for changes
-    status=$(git -C "$current_dir" status --porcelain 2>/dev/null)
-    
-    if [ -n "$status" ]; then
-        # Has changes - show branch with [±] indicator
-        printf ' \033[33mon %s \033[31m[±]\033[0m' "$branch"
+# Calculate context usage percentage
+context_size=$(echo "$json" | jq -r '.context_window.context_window_size // 0')
+usage=$(echo "$json" | jq '.context_window.current_usage')
+
+if [ "$usage" != "null" ] && [ "$context_size" -gt 0 ]; then
+  # Sum all token types for actual context usage
+  current_tokens=$(echo "$usage" | jq '(.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)')
+
+  if [ "$current_tokens" -gt 0 ]; then
+    usage_pct=$((current_tokens * 100 / context_size))
+
+    # Set color based on usage percentage
+    if [ "$usage_pct" -lt 25 ]; then
+      color_code="\033[38;2;0;255;65m"  # bright green
+    elif [ "$usage_pct" -lt 50 ]; then
+      color_code="\033[38;2;255;165;0m"  # orange
     else
-        # Clean - show just branch
-        printf ' \033[33mon %s\033[0m' "$branch"
+      color_code="\033[38;2;255;192;203m"  # pink
     fi
+
+    context_display=" (${usage_pct}%)"
+  else
+    color_code="\033[38;2;0;255;65m"  # bright green for 0%
+    context_display=" (0%)"
+  fi
+else
+  color_code="\033[38;2;0;255;65m"  # bright green for 0%
+  context_display=" (0%)"
 fi
 
-# Display model name in dim color
-printf ' \033[90m(%s)\033[0m' "$model_name"
+# Get git branch
+if git rev-parse --git-dir > /dev/null 2>&1; then
+  branch=$(git branch --show-current 2>/dev/null || echo "no branch")
+else
+  branch="no git"
+fi
+
+# Output status line
+printf "👤 %b%s%s\033[0m | 📁 \033[97m%s\033[0m | 🌳 \033[38;2;0;206;200m%s\033[0m\n" "$color_code" "$model" "$context_display" "$cwd" "$branch"

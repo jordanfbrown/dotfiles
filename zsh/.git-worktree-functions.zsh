@@ -27,6 +27,45 @@ _wt_open_ide() {
   # Otherwise: no IDE opened
 }
 
+# Close IDE window for a worktree path
+_wt_close_ide() {
+  local dir="$1"
+  local project_name=$(basename "$dir")
+
+  # JetBrains IDEs show project name in window title (e.g., "jb-hhmm-828 – file.ts")
+  # Use System Events to close windows via close button (button 1)
+  local ides=("webstorm" "rubymine" "intellij idea")
+
+  for ide_process in "${ides[@]}"; do
+    osascript <<EOF 2>/dev/null
+      tell application "System Events"
+        if exists process "$ide_process" then
+          tell process "$ide_process"
+            repeat with w in (every window whose name contains "$project_name")
+              try
+                click button 1 of w
+              end try
+            end repeat
+          end tell
+        end if
+      end tell
+EOF
+  done
+}
+
+# Close tmux window for a worktree
+_wt_close_tmux_window() {
+  local worktree_path="$1"
+  local window_name=$(_wt_window_name "$worktree_path")
+
+  # Check if we're in tmux and the window exists
+  if [[ -n "$TMUX" ]]; then
+    if tmux list-windows -F '#{window_name}' | grep -qx "$window_name"; then
+      tmux kill-window -t "$window_name" 2>/dev/null
+    fi
+  fi
+}
+
 # Convert identifier to branch name
 # 123 → jb-hhmm-123
 # hhmm-123 → jb-hhmm-123
@@ -63,6 +102,13 @@ _wt_repo_parent() {
 # Get the main worktree path
 _wt_main_path() {
   git rev-parse --show-toplevel 2>/dev/null
+}
+
+# Find the main worktree from any worktree path
+_wt_find_main_from_worktree() {
+  local worktree_path="$1"
+  # Use git worktree list to find the main worktree (always first in list)
+  git -C "$worktree_path" worktree list --porcelain 2>/dev/null | awk '/^worktree / {print $2; exit}'
 }
 
 # Find a worktree globally across all repos in ~/wealthsimple
@@ -110,6 +156,90 @@ _wt_tmux_switch() {
     tmux select-pane -t 0                      # Select top pane
     tmux send-keys 'c' Enter                   # Run claude
     tmux select-pane -t 1                      # Focus bottom pane
+  fi
+}
+
+# Parse GitHub PR URL to extract owner, repo, and PR number
+_wt_parse_pr_url() {
+  local url="$1"
+
+  # Match pattern: https://github.com/owner/repo/pull/123[/files]
+  if [[ "$url" =~ ^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+) ]]; then
+    echo "${match[1]}" "${match[2]}" "${match[3]}"
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Fetch branch name and PR title using gh CLI
+_wt_fetch_pr_details() {
+  local owner="$1"
+  local repo="$2"
+  local pr_number="$3"
+
+  # Unset GITHUB_TOKEN to use keyring auth
+  local output
+  output=$(unset GITHUB_TOKEN && gh pr view "$pr_number" \
+    --repo "$owner/$repo" \
+    --json headRefName,title \
+    --jq '[.headRefName, .title] | join("|")' 2>&1)
+
+  if [[ $? -ne 0 ]]; then
+    _wt_red "Error: Failed to fetch PR details"
+    _wt_red "$output"
+    return 1
+  fi
+
+  echo "$output"
+  return 0
+}
+
+# Map GitHub repo name to local worktree path
+_wt_map_repo_to_path() {
+  local owner="$1"
+  local repo="$2"
+
+  # Try direct match first
+  local direct_path="$HOME/$owner/$repo/main"
+  if [[ -d "$direct_path/.git" ]]; then
+    echo "$direct_path"
+    return 0
+  fi
+
+  # Fallback: FZF picker from all repos
+  _wt_yellow "Repo not found at $direct_path"
+  local repos=$(find ~/wealthsimple -maxdepth 2 -name main -type d 2>/dev/null | grep '/main$')
+  local selected=$(echo "$repos" | fzf --prompt="Select repo for $owner/$repo: ")
+
+  if [[ -z "$selected" ]]; then
+    return 1
+  fi
+
+  echo "$selected"
+  return 0
+}
+
+# Create or switch to tmux window with code review command
+_wt_tmux_review() {
+  local window_name="$1"
+  local worktree_path="$2"
+  local pr_number="$3"
+  local repo_name="$4"
+  local pr_title="$5"
+
+  # Check if window exists
+  if tmux list-windows -F '#{window_name}' | grep -qx "$window_name"; then
+    # Window exists - just switch to it (preserve existing session)
+    tmux select-window -t "$window_name"
+  else
+    # Create new window with review command
+    tmux new-window -n "$window_name" -c "$worktree_path"
+    tmux split-window -v -c "$worktree_path"
+    tmux select-pane -t 0
+    # Send review request with PR context
+    tmux send-keys "claude \"Review PR #$pr_number in $repo_name. The branch is checked out locally in a git worktree, so read files directly instead of using the gh API. Do NOT run tests or builds - the worktree is not set up for that.\"" Enter
+    tmux select-pane -t 1
   fi
 }
 
@@ -211,6 +341,12 @@ wt() {
     done
   fi
 
+  # Copy .idea directory to preserve IDE settings (excluded dirs, run configs, etc.)
+  if [[ -d "$main_path/.idea" ]]; then
+    _wt_yellow "Copying IDE settings..."
+    _wt_cp_cow "$main_path/.idea" "$worktree_path/.idea"
+  fi
+
   # direnv allow if .envrc exists
   if [[ -f "$worktree_path/.envrc" ]]; then
     direnv allow "$worktree_path"
@@ -270,12 +406,21 @@ wtd() {
   fi
 
   # Get the repo's main directory for git commands
-  local repo_main="$(dirname "$worktree_path")/main"
+  local repo_main=$(_wt_find_main_from_worktree "$worktree_path")
+  if [[ -z "$repo_main" ]]; then
+    _wt_red "Error: Could not find main worktree"
+    return 1
+  fi
 
   # Confirm deletion
   echo -n "Delete $worktree_path? [y/N] "
   read -q || { echo; return 0; }
   echo
+
+  # Close IDE and tmux windows
+  _wt_yellow "Closing IDE and tmux windows..."
+  _wt_close_ide "$worktree_path"
+  _wt_close_tmux_window "$worktree_path"
 
   # If we're in the worktree, move to main first
   if [[ "$PWD" == "$worktree_path"* ]]; then
@@ -293,4 +438,126 @@ wtd() {
   git -C "$repo_main" branch -D "$branch" 2>/dev/null && _wt_green "Deleted branch: $branch"
 
   _wt_green "Worktree removed successfully"
+}
+
+# wtr - Create or switch to worktree for PR code review
+# Usage: wtr <github-pr-url>
+#   wtr https://github.com/wealthsimple/fort-knox/pull/21493
+#   wtr https://github.com/wealthsimple/fort-knox/pull/21493/files
+wtr() {
+  local pr_url="$1"
+
+  # Require tmux
+  if [[ -z "$TMUX" ]]; then
+    _wt_red "Error: wtr requires tmux. Run inside a tmux session."
+    return 1
+  fi
+
+  # Require URL argument
+  if [[ -z "$pr_url" ]]; then
+    _wt_red "Error: GitHub PR URL required"
+    _wt_yellow "Usage: wtr https://github.com/owner/repo/pull/123"
+    return 1
+  fi
+
+  # Parse PR URL
+  local parsed=($(_wt_parse_pr_url "$pr_url"))
+  if [[ $? -ne 0 || ${#parsed[@]} -ne 3 ]]; then
+    _wt_red "Error: Invalid GitHub PR URL format"
+    _wt_yellow "Expected: https://github.com/owner/repo/pull/123"
+    return 1
+  fi
+
+  local owner="${parsed[1]}"
+  local repo="${parsed[2]}"
+  local pr_number="${parsed[3]}"
+  local repo_name="$owner/$repo"
+
+  _wt_yellow "Fetching PR details from $repo_name #$pr_number..."
+
+  # Fetch branch and title from GitHub
+  local pr_details=$(_wt_fetch_pr_details "$owner" "$repo" "$pr_number")
+  if [[ $? -ne 0 ]]; then
+    return 1
+  fi
+
+  local branch="${pr_details%%|*}"
+  local pr_title="${pr_details#*|}"
+
+  _wt_green "PR: $pr_title"
+  _wt_green "Branch: $branch"
+
+  # Sanitize branch name for directory (replace slashes with dashes)
+  local worktree_dir="${branch//\//-}"
+
+  # Check if worktree already exists globally
+  local existing_worktree=$(_wt_find_global "$worktree_dir")
+  if [[ -n "$existing_worktree" ]]; then
+    _wt_green "Switching to existing worktree: $existing_worktree"
+    local window_name=$(_wt_window_name "$existing_worktree")
+    _wt_tmux_review "$window_name" "$existing_worktree" "$pr_number" "$repo_name" "$pr_title"
+    _wt_open_ide "$existing_worktree"
+    return 0
+  fi
+
+  # Worktree doesn't exist - map repo and create it
+  _wt_yellow "Mapping repository path..."
+  local main_path=$(_wt_map_repo_to_path "$owner" "$repo")
+  if [[ -z "$main_path" ]]; then
+    _wt_red "Error: Could not determine repository path"
+    return 1
+  fi
+
+  local repo_parent=$(dirname "$main_path")
+  local worktree_path="$repo_parent/$worktree_dir"
+
+  _wt_yellow "Creating worktree for $branch..."
+
+  # Fetch latest from origin
+  git -C "$main_path" fetch origin
+
+  # Check if branch exists locally or remotely, then create worktree
+  if git -C "$main_path" show-ref --verify --quiet "refs/heads/$branch"; then
+    git -C "$main_path" worktree add "$worktree_path" "$branch"
+  elif git -C "$main_path" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    git -C "$main_path" worktree add -b "$branch" "$worktree_path" "origin/$branch"
+  else
+    _wt_red "Error: Branch '$branch' not found locally or on origin"
+    return 1
+  fi
+
+  # Copy untracked files
+  local pattern=$(_wt_get_untracked_pattern)
+  if command -v fd &>/dev/null; then
+    fd -u "^($pattern)$" -E node_modules "$main_path" | while read -r f; do
+      local rel_path="${f#$main_path/}"
+      mkdir -p "$worktree_path/$(dirname "$rel_path")"
+      _wt_cp_cow "$f" "$worktree_path/$rel_path"
+    done
+  fi
+
+  # Copy .idea directory to preserve IDE settings (excluded dirs, run configs, etc.)
+  if [[ -d "$main_path/.idea" ]]; then
+    _wt_yellow "Copying IDE settings..."
+    _wt_cp_cow "$main_path/.idea" "$worktree_path/.idea"
+  fi
+
+  # direnv allow if .envrc exists
+  if [[ -f "$worktree_path/.envrc" ]]; then
+    direnv allow "$worktree_path"
+  fi
+
+  # Note: Skip mise trust for review worktrees to avoid symlink conflicts
+  # Review worktrees don't need mise fully configured
+
+  # Initialize submodules if they exist
+  if [[ -f "$main_path/.gitmodules" ]]; then
+    _wt_yellow "Initializing submodules..."
+    git -C "$worktree_path" submodule update --init --recursive
+  fi
+
+  _wt_green "Created review worktree: $worktree_path"
+  local window_name=$(_wt_window_name "$worktree_path")
+  _wt_tmux_review "$window_name" "$worktree_path" "$pr_number" "$repo_name" "$pr_title"
+  _wt_open_ide "$worktree_path"
 }
