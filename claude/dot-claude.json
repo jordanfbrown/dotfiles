@@ -1,5 +1,5 @@
 {
-  "numStartups": 212,
+  "numStartups": 215,
   "installMethod": "native",
   "autoUpdates": false,
   "hasSeenTasksHint": true,
@@ -24,7 +24,7 @@
     "paste-images-mac": 207,
     "double-esc": 18,
     "continue": 212,
-    "shift-tab": 202,
+    "shift-tab": 212,
     "image-paste": 193,
     "custom-agents": 209,
     "permissions": 209,
@@ -32,7 +32,7 @@
     "plan-mode-for-complex-tasks": 175,
     "double-esc-code-restore": 212,
     "tab-toggle-thinking": 138,
-    "ultrathink-keyword": 202,
+    "ultrathink-keyword": 212,
     "stickers-command": 210,
     "frontend-design-plugin": 145,
     "default-permission-mode-config": 212,
@@ -107,7 +107,7 @@
     "tengu_streaming_tool_execution2": false,
     "tengu_post_compact_survey": false
   },
-  "userID": "937bd2f6460bce826d1d21d8eed5b9615b53fab64fa2f00720114b6bcd3dd6e7",
+  "userID": "c54dc3a238e3f5a28c5ccd498955ddaab7f5302f4bf7e07f21e86e8ac1121135",
   "firstStartTime": "2025-09-11T18:19:12.915Z",
   "projects": {
     "/Users/jordan.brown/wealthsimple/ws-mcp-servers": {
@@ -561,7 +561,7 @@
       "projectOnboardingSeenCount": 2,
       "hasClaudeMdExternalIncludesApproved": false,
       "hasClaudeMdExternalIncludesWarningShown": false,
-      "lastTotalWebSearchRequests": 0,
+      "lastTotalWebSearchRequests": 6,
       "reactVulnerabilityCache": {
         "detected": false,
         "package": null,
@@ -569,36 +569,36 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 0.28243575,
-      "lastAPIDuration": 31201,
-      "lastAPIDurationWithoutRetries": 31197,
-      "lastToolDuration": 0,
-      "lastDuration": 64316,
-      "lastLinesAdded": 0,
+      "lastCost": 2.4433057499999995,
+      "lastAPIDuration": 301536,
+      "lastAPIDurationWithoutRetries": 301527,
+      "lastToolDuration": 116345,
+      "lastDuration": 174721041,
+      "lastLinesAdded": 497,
       "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 564,
-      "lastTotalOutputTokens": 1000,
-      "lastTotalCacheCreationInputTokens": 48653,
-      "lastTotalCacheReadInputTokens": 43545,
+      "lastTotalInputTokens": 260644,
+      "lastTotalOutputTokens": 14006,
+      "lastTotalCacheCreationInputTokens": 245193,
+      "lastTotalCacheReadInputTokens": 603753,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 542,
-          "outputTokens": 140,
+          "inputTokens": 250268,
+          "outputTokens": 1866,
           "cacheReadInputTokens": 0,
-          "cacheCreationInputTokens": 13254,
+          "cacheCreationInputTokens": 13201,
           "webSearchRequests": 0,
-          "costUSD": 0.0178095
+          "costUSD": 0.27609924999999996
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 22,
-          "outputTokens": 860,
-          "cacheReadInputTokens": 43545,
-          "cacheCreationInputTokens": 35399,
-          "webSearchRequests": 0,
-          "costUSD": 0.26462625
+          "inputTokens": 10376,
+          "outputTokens": 12140,
+          "cacheReadInputTokens": 603753,
+          "cacheCreationInputTokens": 231992,
+          "webSearchRequests": 6,
+          "costUSD": 2.1672065
         }
       },
-      "lastSessionId": "98805031-5917-4016-ae42-46ab65d01785"
+      "lastSessionId": "b7aca4b3-f706-4bf5-83b9-dd0b7bd62029"
     },
     "/Users/jordan.brown/wealthsimple/invest-graphql-api": {
       "allowedTools": [],
@@ -1272,6 +1272,63 @@
       ],
       "exampleFilesGeneratedAt": 1768152266156,
       "hasCompletedProjectOnboarding": true
+    },
+    "/Users/jordan.brown/wealthsimple/financial-metrics-service/jb-hhmm-123": {
+      "allowedTools": [],
+      "mcpContextUris": [],
+      "mcpServers": {},
+      "enabledMcpjsonServers": [],
+      "disabledMcpjsonServers": [],
+      "hasTrustDialogAccepted": true,
+      "projectOnboardingSeenCount": 0,
+      "hasClaudeMdExternalIncludesApproved": false,
+      "hasClaudeMdExternalIncludesWarningShown": false,
+      "reactVulnerabilityCache": {
+        "detected": false,
+        "package": null,
+        "packageName": null,
+        "version": null,
+        "packageManager": null
+      },
+      "exampleFiles": [
+        "LDClient.kt",
+        "WsAccountDataLoader.kt",
+        "AccountsService.kt",
+        "NetWorthFinancialsDataFetcher.kt",
+        "HouseholdFinancialsDataFetcher.kt"
+      ],
+      "exampleFilesGeneratedAt": 1768195525469,
+      "lastCost": 0.0099786,
+      "lastAPIDuration": 9239,
+      "lastAPIDurationWithoutRetries": 9238,
+      "lastToolDuration": 0,
+      "lastDuration": 21031,
+      "lastLinesAdded": 0,
+      "lastLinesRemoved": 0,
+      "lastTotalInputTokens": 9,
+      "lastTotalOutputTokens": 310,
+      "lastTotalCacheCreationInputTokens": 0,
+      "lastTotalCacheReadInputTokens": 33268,
+      "lastTotalWebSearchRequests": 0,
+      "lastModelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 3,
+          "outputTokens": 192,
+          "cacheReadInputTokens": 13764,
+          "cacheCreationInputTokens": 0,
+          "webSearchRequests": 0,
+          "costUSD": 0.0023394
+        },
+        "claude-sonnet-4-5-20250929": {
+          "inputTokens": 6,
+          "outputTokens": 118,
+          "cacheReadInputTokens": 19504,
+          "cacheCreationInputTokens": 0,
+          "webSearchRequests": 0,
+          "costUSD": 0.0076392000000000005
+        }
+      },
+      "lastSessionId": "ef038056-dd85-44e3-8986-8fe741bd2621"
     }
   },
   "oauthAccount": {
@@ -1408,6 +1465,7 @@
       "/Users/jordan.brown/wealthsimple/wealthsimple"
     ],
     "wealthsimple/financial-metrics-service": [
+      "/Users/jordan.brown/wealthsimple/financial-metrics-service/jb-hhmm-123",
       "/Users/jordan.brown/wealthsimple/financial-metrics-service"
     ],
     "wealthsimple/eventsimple": [
