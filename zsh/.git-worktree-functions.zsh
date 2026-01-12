@@ -347,6 +347,11 @@ wt() {
     _wt_cp_cow "$main_path/.idea" "$worktree_path/.idea"
   fi
 
+  # Copy CLAUDE.local.md for local Claude Code instructions
+  if [[ -f "$main_path/CLAUDE.local.md" ]]; then
+    _wt_cp_cow "$main_path/CLAUDE.local.md" "$worktree_path/CLAUDE.local.md"
+  fi
+
   # direnv allow if .envrc exists
   if [[ -f "$worktree_path/.envrc" ]]; then
     direnv allow "$worktree_path"
@@ -540,6 +545,11 @@ wtr() {
   if [[ -d "$main_path/.idea" ]]; then
     _wt_yellow "Copying IDE settings..."
     _wt_cp_cow "$main_path/.idea" "$worktree_path/.idea"
+  fi
+
+  # Copy CLAUDE.local.md for local Claude Code instructions
+  if [[ -f "$main_path/CLAUDE.local.md" ]]; then
+    _wt_cp_cow "$main_path/CLAUDE.local.md" "$worktree_path/CLAUDE.local.md"
   fi
 
   # direnv allow if .envrc exists
