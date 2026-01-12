@@ -87,6 +87,28 @@ _wt_list_all_worktrees() {
   done
 }
 
+# Get tmux window name from worktree path: <repo>/<branch>
+_wt_window_name() {
+  local worktree_path="$1"
+  local repo=$(basename "$(dirname "$worktree_path")")
+  local branch=$(basename "$worktree_path")
+  echo "$repo/$branch"
+}
+
+# Switch to or create a tmux window for the worktree
+_wt_tmux_switch() {
+  local window_name="$1"
+  local worktree_path="$2"
+
+  # Check if window exists in current session
+  if tmux list-windows -F '#{window_name}' | grep -qx "$window_name"; then
+    tmux select-window -t "$window_name"
+  else
+    # Create new window with name, starting in worktree_path
+    tmux new-window -n "$window_name" -c "$worktree_path"
+  fi
+}
+
 # =============================================================================
 # MAIN FUNCTIONS
 # =============================================================================
@@ -100,12 +122,19 @@ _wt_list_all_worktrees() {
 wt() {
   local identifier="$1"
 
+  # Require tmux
+  if [[ -z "$TMUX" ]]; then
+    _wt_red "Error: wt requires tmux. Run inside a tmux session."
+    return 1
+  fi
+
   # No args: FZF selection from ALL worktrees globally (excluding main)
   if [[ -z "$identifier" ]]; then
     local worktrees=$(_wt_list_all_worktrees | grep -v '/main$')
     local selected=$(echo "$worktrees" | fzf --prompt="Select worktree: ")
     [[ -z "$selected" ]] && return 0
-    cd "$selected"
+    local window_name=$(_wt_window_name "$selected")
+    _wt_tmux_switch "$window_name" "$selected"
     _wt_open_ide "$selected"
     return 0
   fi
@@ -116,7 +145,8 @@ wt() {
   local global_match=$(_wt_find_global "$branch")
   if [[ -n "$global_match" ]]; then
     _wt_green "Switching to existing worktree: $global_match"
-    cd "$global_match"
+    local window_name=$(_wt_window_name "$global_match")
+    _wt_tmux_switch "$window_name" "$global_match"
     _wt_open_ide "$global_match"
     return 0
   fi
@@ -194,7 +224,8 @@ wt() {
   fi
 
   _wt_green "Created worktree: $worktree_path"
-  cd "$worktree_path"
+  local window_name=$(_wt_window_name "$worktree_path")
+  _wt_tmux_switch "$window_name" "$worktree_path"
   _wt_open_ide "$worktree_path"
 }
 
