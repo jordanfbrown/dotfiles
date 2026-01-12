@@ -2,55 +2,60 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Development Environment
-
-### Platform
-- macOS
-- Uses GNU Stow for dotfile management
-- Requires Homebrew for package management
-
-### Key Dependencies
-- starship
-- zsh-autosuggestions
-- zsh-syntax-highlighting
-- fzf
-- z
-- tmux
-- 1Password CLI (for credential management)
-
 ## Common Commands
 
-### Setup and Installation
 ```bash
-# Initial setup
+# Initial setup (installs dependencies, deploys all packages)
 ./setup.sh
 
-# Deploy specific package configurations
+# Deploy specific packages
 stow ag git vim zsh tmux claude
 
-# Source zsh configuration
+# Reload zsh after changes
 source ~/.zshrc
+
+# Tmux: Install plugins with Ctrl-X + I (prefix is Ctrl-X)
 ```
 
-### Tmux Plugin Management
-```bash
-# Install tmux plugins 
-# After starting tmux, press Ctrl-A + I (or configured prefix + I)
+## Architecture
+
+This repo uses GNU Stow to symlink dotfiles. Each top-level directory is a "package" that Stow deploys to `$HOME`:
+
+```
+dotfiles/
+├── ag/          → ~/.ignore
+├── claude/      → ~/.claude/CLAUDE.md (global Claude Code instructions)
+├── git/         → ~/.gitconfig, ~/.gitignore
+├── tmux/        → ~/.tmux.conf, ~/.tmux/plugins/
+├── vim/         → ~/.vimrc
+└── zsh/         → ~/.zshrc, ~/.zprofile, ~/.zshenv, ~/.git-worktree-functions.zsh
 ```
 
-## Deployment Strategy
+### Key Files
+- `zsh/.zshrc` - Main shell config with aliases, functions, and plugin loading
+- `zsh/.git-worktree-functions.zsh` - Git worktree management (`wt`/`wtd` commands)
+- `tmux/.tmux.conf` - Tmux config with Ctrl-X prefix, vi keys, TPM plugins
+- `git/.gitconfig` - Git config with 1Password SSH signing, difftastic
 
-### Configuration Deployment
-- Uses GNU Stow to symlink configuration files
-- Configured packages: ag, git, vim, zsh, tmux, claude
-- Configuration files should maintain modular, stow-friendly structure
+### Naming Convention
+Files prefixed with `dot-` are renamed by Stow (e.g., `git/dot-gitignore` → `~/.gitignore`).
 
-## Security Considerations
-- Uses 1Password CLI for credential management
-- No secrets hardcoded in configuration files
-- Requires manual credential setup after initial installation
+## Important Shell Functions
 
-## Development Workflow
-- All configuration changes should be made in respective package directories
-- Use `stow` to deploy changes
-- Verify changes by sourcing configuration files and testing interactively
+### Git Worktree Management (in `.git-worktree-functions.zsh`)
+- `wt` - FZF picker for all feature worktrees across ~/wealthsimple repos
+- `wt 123` - Switch to `jb-hhmm-123` globally, or create if not exists
+- `wtd` - FZF picker to delete any worktree
+- `wtd 123` - Delete specific worktree
+
+These auto-open the correct IDE (WebStorm/RubyMine/IntelliJ), copy untracked files, and run `pnpm install` or copy node_modules.
+
+### Other Notable Functions (in `.zshrc`)
+- `b 123` - Create/switch to branch `jb/hhmm-123`
+- `gcj` - Commit using Jira ticket description
+- `nxa test` - Run nx affected tests from fork point
+
+## Security
+- 1Password CLI for credentials (op read "op://...")
+- SSH signing via 1Password (`op-ssh-sign`)
+- `GITHUB_TOKEN` is explicitly unset in `.zshrc` to force `gh` CLI keyring auth

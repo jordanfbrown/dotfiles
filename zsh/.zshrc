@@ -74,16 +74,13 @@ export PATH="$HOME/.local/bin:$PATH"
 export NEXUS_USERNAME="dev-read"
 export JIRA_EMAIL="***REMOVED***"
 
-# Disable auto updater for Claude Code
-export DISABLE_AUTOUPDATER=1
-
 export FORT_KNOX_GRPC_VERSION=1.72.0
 
 # https://github.com/ruby/openssl/issues/949
 export RUBYOPT="-r$HOME/.rubyopenssl_default_store.rb $RUBYOPT"
 
-export HIVE_TOKEN=***REMOVED***
-
+# Secrets loaded from ~/.zsh_secrets (gitignored)
+[[ -f ~/.zsh_secrets ]] && source ~/.zsh_secrets
 
 # =============================================================================
 # GIT ALIASES
@@ -160,6 +157,12 @@ alias my-prod-id="echo ***REMOVED*** | pbcopy"
 # =============================================================================
 c() {
   claude --dangerously-skip-permissions "$@"
+}
+
+go() {
+  local github_url="$1"
+  local graphite_url=$(echo "$github_url" | sed 's|github.com|app.graphite.com/github/pr|' | sed 's|/pull/|/|')
+  open "$graphite_url"
 }
 
 wtf() {

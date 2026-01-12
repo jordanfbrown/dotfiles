@@ -48,6 +48,16 @@ nx lint
 - **Testing**: Run relevant tests after making changes
 - **Commits**: Follow existing commit message style in the repository
 - **File Discovery**: Use project search tools to understand codebase structure before making changes
+- **Git Worktrees**: Use `wt` and `wtd` commands for worktree management:
+  - Structure: `<repo>/<branch>` (e.g., `front-end-monorepo/main/`, `front-end-monorepo/jb-hhmm-123/`)
+  - **Works globally** - run from anywhere, searches all repos in ~/wealthsimple
+  - `wt` - FZF picker for all feature worktrees across all repos
+  - `wt 123` - Switch to existing `jb-hhmm-123` globally, or create (prompts for repo if not in one)
+  - `wtd` - FZF picker to delete any worktree (with confirmation)
+  - `wtd 123` - Delete specific worktree (searches globally)
+  - Auto-opens correct IDE (WebStorm for JS/TS, RubyMine for Ruby, IntelliJ for Kotlin/Maven)
+  - Auto-runs `pnpm install` for pnpm projects, copies node_modules for npm/yarn
+  - Auto-copies .env, .envrc, mise.toml and runs `direnv allow` / `mise trust`
 
 ## Best Practices
 - Never assume library availability - always check `package.json`, `Gemfile`, or `build.gradle` first
