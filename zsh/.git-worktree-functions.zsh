@@ -106,6 +106,10 @@ _wt_tmux_switch() {
   else
     # Create new window with name, starting in worktree_path
     tmux new-window -n "$window_name" -c "$worktree_path"
+    tmux split-window -v -c "$worktree_path"  # Split top/bottom
+    tmux select-pane -t 0                      # Select top pane
+    tmux send-keys 'c' Enter                   # Run claude
+    tmux select-pane -t 1                      # Focus bottom pane
   fi
 }
 
