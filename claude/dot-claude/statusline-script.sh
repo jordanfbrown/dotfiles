@@ -10,35 +10,19 @@ json=$(cat)
 model=$(echo "$json" | jq -r '.model.display_name // "unknown"')
 cwd=$(echo "$json" | jq -r '.workspace.current_dir // .cwd // "unknown"' | sed "s|^$HOME|~|")
 
-# Calculate context usage percentage
-context_size=$(echo "$json" | jq -r '.context_window.context_window_size // 0')
-usage=$(echo "$json" | jq '.context_window.current_usage')
+# Get context usage percentage (available in Claude 2.1.6+)
+usage_pct=$(echo "$json" | jq -r '.context_window.used_percentage // 0' | cut -d'.' -f1)
 
-if [ "$usage" != "null" ] && [ "$context_size" -gt 0 ]; then
-  # Sum all token types for actual context usage
-  current_tokens=$(echo "$usage" | jq '(.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)')
-
-  if [ "$current_tokens" -gt 0 ]; then
-    usage_pct=$((current_tokens * 100 / context_size))
-
-    # Set color based on usage percentage
-    if [ "$usage_pct" -lt 25 ]; then
-      color_code="\033[38;2;0;255;65m"  # bright green
-    elif [ "$usage_pct" -lt 50 ]; then
-      color_code="\033[38;2;255;165;0m"  # orange
-    else
-      color_code="\033[38;2;255;192;203m"  # pink
-    fi
-
-    context_display=" (${usage_pct}%)"
-  else
-    color_code="\033[38;2;0;255;65m"  # bright green for 0%
-    context_display=" (0%)"
-  fi
+# Set color based on usage percentage
+if [ "$usage_pct" -lt 25 ]; then
+  color_code="\033[38;2;0;255;65m"  # bright green
+elif [ "$usage_pct" -lt 50 ]; then
+  color_code="\033[38;2;255;165;0m"  # orange
 else
-  color_code="\033[38;2;0;255;65m"  # bright green for 0%
-  context_display=" (0%)"
+  color_code="\033[38;2;255;192;203m"  # pink
 fi
+
+context_display=" (${usage_pct}%)"
 
 # Get git branch
 if git rev-parse --git-dir > /dev/null 2>&1; then

@@ -32,6 +32,9 @@
       "Bash(unset GITHUB_TOKEN && gh pr diff:*)",
       "Bash(unset GITHUB_TOKEN && gh pr checks:*)",
       "Bash(unset GITHUB_TOKEN && gh api:*)",
+      "Bash(jira :*)",
+      "Bash(JIRA_API_TOKEN=* jira :*)",
+      "Bash(JIRA_API_TOKEN=$(op read op://Employee/JIRA_API_KEY/credential) jira :*)",
       "Bash(docker ps:*)",
       "Bash(docker logs:*)",
       "Bash(docker inspect:*)",
@@ -81,7 +84,8 @@
       "mcp__temporal__fetch_temporal_workflows",
       "mcp__temporal__fetch_workflow_history",
       "Bash(* jira issue view *)",
-      "Bash(ruby -c :*)"
+      "Bash(ruby -c :*)",
+      "Skill(jira-cli)"
     ],
     "deny": [
       "Read(~/**)",
