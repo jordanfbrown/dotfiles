@@ -61,6 +61,7 @@
       "Bash(bundle exec rspec:*)",
       "Bash(bundle exec rubocop:*)",
       "Bash(bundle exec rake:*)",
+      "Bash(bundle install)",
       "WebSearch",
       "WebFetch(domain:temporal.io)",
       "WebFetch(domain:docs.temporal.io)",
@@ -85,7 +86,12 @@
       "mcp__temporal__fetch_workflow_history",
       "Bash(* jira issue view *)",
       "Bash(ruby -c :*)",
-      "Skill(jira-cli)"
+      "Skill(jira-cli)",
+      "Skill(femr-testing)",
+      "Skill(handoff)",
+      "Skill(pickup)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm eslint:*)"
     ],
     "deny": [
       "Read(~/**)",
@@ -181,6 +187,7 @@
     ],
     "defaultMode": "acceptEdits"
   },
+  "model": "opus",
   "hooks": {
     "Stop": [
       {
@@ -211,8 +218,9 @@
     "edge-skills@ws-claude-marketplace": true,
     "superpowers@ws-claude-marketplace": true,
     "graphite@ws-claude-marketplace": true,
-    "typescript-lsp@claude-plugins-official": true
+    "typescript-lsp@claude-plugins-official": true,
+    "code-simplifier@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true
   },
-  "alwaysThinkingEnabled": true,
-  "model": "opus"
+  "alwaysThinkingEnabled": true
 }

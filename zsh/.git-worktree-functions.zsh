@@ -14,6 +14,48 @@ _wt_cp_cow() {
   /bin/cp -Rc "$1" "$2"
 }
 
+# Copy safe .idea settings (excludes files with absolute paths that break search indexing)
+_wt_copy_idea_settings() {
+  local src_idea="$1"
+  local dst_idea="$2"
+  local src_dir_name="$3"  # e.g., "main"
+  local dst_dir_name="$4"  # e.g., "jb-hhmm-857"
+
+  [[ ! -d "$src_idea" ]] && return
+
+  mkdir -p "$dst_idea"
+
+  # Copy safe directories (no absolute paths)
+  for dir in codeStyles inspectionProfiles scopes dictionaries fileTemplates runConfigurations; do
+    [[ -d "$src_idea/$dir" ]] && _wt_cp_cow "$src_idea/$dir" "$dst_idea/$dir"
+  done
+
+  # Copy and rename .iml file to match new worktree name
+  # .iml files use $MODULE_DIR$ so exclusions are relative and safe
+  if [[ -f "$src_idea/$src_dir_name.iml" ]]; then
+    _wt_cp_cow "$src_idea/$src_dir_name.iml" "$dst_idea/$dst_dir_name.iml"
+  fi
+
+  # Create modules.xml pointing to correctly-named .iml
+  if [[ -f "$dst_idea/$dst_dir_name.iml" ]]; then
+    cat > "$dst_idea/modules.xml" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://\$PROJECT_DIR\$/.idea/$dst_dir_name.iml" filepath="\$PROJECT_DIR\$/.idea/$dst_dir_name.iml" />
+    </modules>
+  </component>
+</project>
+EOF
+  fi
+
+  # Copy misc.xml (SDK settings - uses SDK names, not paths)
+  [[ -f "$src_idea/misc.xml" ]] && _wt_cp_cow "$src_idea/misc.xml" "$dst_idea/misc.xml"
+
+  # Skip: workspace.xml (absolute paths to open files, window state, search indexes)
+}
+
 # Open correct IDE based on project type
 _wt_open_ide() {
   local dir="$1"
@@ -341,10 +383,12 @@ wt() {
     done
   fi
 
-  # Copy .idea directory to preserve IDE settings (excluded dirs, run configs, etc.)
+  # Copy safe .idea settings (excluded dirs, run configs, code styles)
+  # Skips workspace.xml which contains absolute paths that break search indexing
   if [[ -d "$main_path/.idea" ]]; then
     _wt_yellow "Copying IDE settings..."
-    _wt_cp_cow "$main_path/.idea" "$worktree_path/.idea"
+    local main_dir_name=$(basename "$main_path")
+    _wt_copy_idea_settings "$main_path/.idea" "$worktree_path/.idea" "$main_dir_name" "$branch"
   fi
 
   # Copy CLAUDE.local.md for local Claude Code instructions
@@ -541,10 +585,12 @@ wtr() {
     done
   fi
 
-  # Copy .idea directory to preserve IDE settings (excluded dirs, run configs, etc.)
+  # Copy safe .idea settings (excluded dirs, run configs, code styles)
+  # Skips workspace.xml which contains absolute paths that break search indexing
   if [[ -d "$main_path/.idea" ]]; then
     _wt_yellow "Copying IDE settings..."
-    _wt_cp_cow "$main_path/.idea" "$worktree_path/.idea"
+    local main_dir_name=$(basename "$main_path")
+    _wt_copy_idea_settings "$main_path/.idea" "$worktree_path/.idea" "$main_dir_name" "$worktree_dir"
   fi
 
   # Copy CLAUDE.local.md for local Claude Code instructions

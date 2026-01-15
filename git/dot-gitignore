@@ -3,3 +3,4 @@ CLAUDE.local.md
 .claude
 docs/plans/
 .zsh_secrets
+.agent
