@@ -9,6 +9,71 @@ _wt_green() { printf '\033[0;32m%s\033[0m\n' "$1"; }
 _wt_yellow() { printf '\033[0;33m%s\033[0m\n' "$1"; }
 _wt_red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 
+# Require tmux, return 1 if not in tmux
+_wt_require_tmux() {
+  if [[ -z "$TMUX" ]]; then
+    _wt_red "Error: This command requires tmux. Run inside a tmux session."
+    return 1
+  fi
+}
+
+# Create worktree from branch (handles local, remote, or new)
+# Args: $1=main_path, $2=worktree_path, $3=branch, $4=allow_new (true/false)
+_wt_create_from_branch() {
+  local main_path="$1"
+  local worktree_path="$2"
+  local branch="$3"
+  local allow_new="${4:-true}"
+
+  if git -C "$main_path" show-ref --verify --quiet "refs/heads/$branch"; then
+    git -C "$main_path" worktree add "$worktree_path" "$branch"
+  elif git -C "$main_path" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    git -C "$main_path" worktree add -b "$branch" "$worktree_path" "origin/$branch"
+  elif [[ "$allow_new" == "true" ]]; then
+    git -C "$main_path" worktree add -b "$branch" "$worktree_path"
+  else
+    _wt_red "Error: Branch '$branch' not found locally or on origin"
+    return 1
+  fi
+}
+
+# Setup worktree environment (copy untracked files, IDE settings, etc.)
+# Args: $1=main_path, $2=worktree_path, $3=dir_name
+_wt_setup_environment() {
+  local main_path="$1"
+  local worktree_path="$2"
+  local dir_name="$3"
+
+  # Copy untracked files
+  local pattern=$(_wt_get_untracked_pattern)
+  if command -v fd &>/dev/null; then
+    fd -u "^($pattern)$" -E node_modules "$main_path" | while read -r f; do
+      local rel_path="${f#$main_path/}"
+      mkdir -p "$worktree_path/$(dirname "$rel_path")"
+      _wt_cp_cow "$f" "$worktree_path/$rel_path"
+    done
+  fi
+
+  # Copy safe .idea settings
+  if [[ -d "$main_path/.idea" ]]; then
+    _wt_yellow "Copying IDE settings..."
+    local main_dir_name=$(basename "$main_path")
+    _wt_copy_idea_settings "$main_path/.idea" "$worktree_path/.idea" "$main_dir_name" "$dir_name"
+  fi
+
+  # Copy CLAUDE.local.md
+  [[ -f "$main_path/CLAUDE.local.md" ]] && _wt_cp_cow "$main_path/CLAUDE.local.md" "$worktree_path/CLAUDE.local.md"
+
+  # direnv allow
+  [[ -f "$worktree_path/.envrc" ]] && direnv allow "$worktree_path"
+
+  # Submodules
+  if [[ -f "$main_path/.gitmodules" ]]; then
+    _wt_yellow "Initializing submodules..."
+    git -C "$worktree_path" submodule update --init --recursive
+  fi
+}
+
 # Copy-on-write (assumes APFS)
 _wt_cp_cow() {
   /bin/cp -Rc "$1" "$2"
@@ -298,11 +363,7 @@ _wt_tmux_review() {
 wt() {
   local identifier="$1"
 
-  # Require tmux
-  if [[ -z "$TMUX" ]]; then
-    _wt_red "Error: wt requires tmux. Run inside a tmux session."
-    return 1
-  fi
+  _wt_require_tmux || return 1
 
   # No args: FZF selection from ALL worktrees globally (excluding main)
   if [[ -z "$identifier" ]]; then
@@ -352,20 +413,14 @@ wt() {
   # Fetch latest from origin
   git -C "$main_path" fetch origin
 
-  # Check if branch exists locally or remotely
-  if git -C "$main_path" show-ref --verify --quiet "refs/heads/$branch"; then
-    # Local branch exists
-    git -C "$main_path" worktree add "$worktree_path" "$branch"
-  elif git -C "$main_path" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
-    # Remote branch exists
-    git -C "$main_path" worktree add -b "$branch" "$worktree_path" "origin/$branch"
-  else
-    # Create new branch from current HEAD
-    git -C "$main_path" worktree add -b "$branch" "$worktree_path"
-  fi
+  # Create worktree (allows new branches)
+  _wt_create_from_branch "$main_path" "$worktree_path" "$branch" true
 
-  # Handle node_modules: pnpm install is faster than copying, npm/yarn benefit from copy
-  if [[ -f "$worktree_path/pnpm-lock.yaml" ]]; then
+  # Handle dependencies based on project type
+  if [[ -f "$worktree_path/Gemfile" ]]; then
+    _wt_yellow "Running bundle install in background..."
+    (cd "$worktree_path" && bundle install) &
+  elif [[ -f "$worktree_path/pnpm-lock.yaml" ]]; then
     _wt_yellow "Running pnpm install in background..."
     (cd "$worktree_path" && pnpm install) &
   elif [[ -d "$main_path/node_modules" ]]; then
@@ -373,43 +428,12 @@ wt() {
     /bin/cp -Rc "$main_path/node_modules" "$worktree_path/node_modules" &
   fi
 
-  # Copy untracked files
-  local pattern=$(_wt_get_untracked_pattern)
-  if command -v fd &>/dev/null; then
-    fd -u "^($pattern)$" -E node_modules "$main_path" | while read -r f; do
-      local rel_path="${f#$main_path/}"
-      mkdir -p "$worktree_path/$(dirname "$rel_path")"
-      _wt_cp_cow "$f" "$worktree_path/$rel_path"
-    done
-  fi
+  # Setup environment (untracked files, IDE settings, CLAUDE.local.md, direnv, submodules)
+  _wt_setup_environment "$main_path" "$worktree_path" "$branch"
 
-  # Copy safe .idea settings (excluded dirs, run configs, code styles)
-  # Skips workspace.xml which contains absolute paths that break search indexing
-  if [[ -d "$main_path/.idea" ]]; then
-    _wt_yellow "Copying IDE settings..."
-    local main_dir_name=$(basename "$main_path")
-    _wt_copy_idea_settings "$main_path/.idea" "$worktree_path/.idea" "$main_dir_name" "$branch"
-  fi
-
-  # Copy CLAUDE.local.md for local Claude Code instructions
-  if [[ -f "$main_path/CLAUDE.local.md" ]]; then
-    _wt_cp_cow "$main_path/CLAUDE.local.md" "$worktree_path/CLAUDE.local.md"
-  fi
-
-  # direnv allow if .envrc exists
-  if [[ -f "$worktree_path/.envrc" ]]; then
-    direnv allow "$worktree_path"
-  fi
-
-  # mise trust if mise config exists
+  # mise trust if mise config exists (wt only, not wtr)
   if [[ -f "$worktree_path/.mise.toml" || -f "$worktree_path/mise.toml" || -f "$worktree_path/.tool-versions" ]]; then
     mise trust "$worktree_path"
-  fi
-
-  # Initialize submodules if they exist
-  if [[ -f "$main_path/.gitmodules" ]]; then
-    _wt_yellow "Initializing submodules..."
-    git -C "$worktree_path" submodule update --init --recursive
   fi
 
   _wt_green "Created worktree: $worktree_path"
@@ -496,11 +520,7 @@ wtd() {
 wtr() {
   local pr_url="$1"
 
-  # Require tmux
-  if [[ -z "$TMUX" ]]; then
-    _wt_red "Error: wtr requires tmux. Run inside a tmux session."
-    return 1
-  fi
+  _wt_require_tmux || return 1
 
   # Require URL argument
   if [[ -z "$pr_url" ]]; then
@@ -565,52 +585,12 @@ wtr() {
   # Fetch latest from origin
   git -C "$main_path" fetch origin
 
-  # Check if branch exists locally or remotely, then create worktree
-  if git -C "$main_path" show-ref --verify --quiet "refs/heads/$branch"; then
-    git -C "$main_path" worktree add "$worktree_path" "$branch"
-  elif git -C "$main_path" show-ref --verify --quiet "refs/remotes/origin/$branch"; then
-    git -C "$main_path" worktree add -b "$branch" "$worktree_path" "origin/$branch"
-  else
-    _wt_red "Error: Branch '$branch' not found locally or on origin"
-    return 1
-  fi
+  # Create worktree (don't allow new branches for PR review)
+  _wt_create_from_branch "$main_path" "$worktree_path" "$branch" false || return 1
 
-  # Copy untracked files
-  local pattern=$(_wt_get_untracked_pattern)
-  if command -v fd &>/dev/null; then
-    fd -u "^($pattern)$" -E node_modules "$main_path" | while read -r f; do
-      local rel_path="${f#$main_path/}"
-      mkdir -p "$worktree_path/$(dirname "$rel_path")"
-      _wt_cp_cow "$f" "$worktree_path/$rel_path"
-    done
-  fi
-
-  # Copy safe .idea settings (excluded dirs, run configs, code styles)
-  # Skips workspace.xml which contains absolute paths that break search indexing
-  if [[ -d "$main_path/.idea" ]]; then
-    _wt_yellow "Copying IDE settings..."
-    local main_dir_name=$(basename "$main_path")
-    _wt_copy_idea_settings "$main_path/.idea" "$worktree_path/.idea" "$main_dir_name" "$worktree_dir"
-  fi
-
-  # Copy CLAUDE.local.md for local Claude Code instructions
-  if [[ -f "$main_path/CLAUDE.local.md" ]]; then
-    _wt_cp_cow "$main_path/CLAUDE.local.md" "$worktree_path/CLAUDE.local.md"
-  fi
-
-  # direnv allow if .envrc exists
-  if [[ -f "$worktree_path/.envrc" ]]; then
-    direnv allow "$worktree_path"
-  fi
-
+  # Setup environment (untracked files, IDE settings, CLAUDE.local.md, direnv, submodules)
   # Note: Skip mise trust for review worktrees to avoid symlink conflicts
-  # Review worktrees don't need mise fully configured
-
-  # Initialize submodules if they exist
-  if [[ -f "$main_path/.gitmodules" ]]; then
-    _wt_yellow "Initializing submodules..."
-    git -C "$worktree_path" submodule update --init --recursive
-  fi
+  _wt_setup_environment "$main_path" "$worktree_path" "$worktree_dir"
 
   _wt_green "Created review worktree: $worktree_path"
   local window_name=$(_wt_window_name "$worktree_path")
