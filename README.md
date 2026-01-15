@@ -27,7 +27,7 @@ The setup script installs Homebrew dependencies, deploys all packages via Stow, 
 
 ### Git Worktree Management
 
-Custom functions for managing git worktrees across `~/wealthsimple` repos:
+Custom functions for managing git worktrees across a configurable directory (`$WS_DIR`, defaults to `~/wealthsimple`):
 
 ```bash
 wt           # FZF picker for all worktrees
@@ -72,6 +72,13 @@ stow ag git vim zsh tmux claude
 
 # Install tmux plugins (start tmux, then Ctrl-X + I)
 ```
+
+## Security
+
+- **Gitleaks** pre-commit hook scans for secrets before each commit
+- **1Password CLI** for credential management (`op read "op://..."`)
+- **SSH commit signing** via 1Password (`op-ssh-sign`)
+- **Sensitive config** (API keys, work paths) lives in `~/.zsh_secrets` (gitignored)
 
 ## Requirements
 

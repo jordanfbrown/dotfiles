@@ -20,7 +20,7 @@
   gpgsign = true
 
 [core]
-  excludesfile = /Users/jordan.brown/.gitignore
+  excludesfile = ~/.gitignore
 
 [diff]
   external = difft

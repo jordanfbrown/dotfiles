@@ -43,7 +43,7 @@ Files prefixed with `dot-` are renamed by Stow (e.g., `git/dot-gitignore` → `~
 ## Important Shell Functions
 
 ### Git Worktree Management (in `.git-worktree-functions.zsh`)
-- `wt` - FZF picker for all feature worktrees across ~/wealthsimple repos
+- `wt` - FZF picker for all feature worktrees across `$WS_DIR` repos
 - `wt 123` - Switch to `jb-hhmm-123` globally, or create if not exists
 - `wtd` - FZF picker to delete any worktree
 - `wtd 123` - Delete specific worktree
@@ -56,6 +56,8 @@ These auto-open the correct IDE (WebStorm/RubyMine/IntelliJ), copy untracked fil
 - `nxa test` - Run nx affected tests from fork point
 
 ## Security
+- Gitleaks pre-commit hook scans for secrets before commits
 - 1Password CLI for credentials (op read "op://...")
 - SSH signing via 1Password (`op-ssh-sign`)
+- Sensitive config lives in `~/.zsh_secrets` (gitignored)
 - `GITHUB_TOKEN` is explicitly unset in `.zshrc` to force `gh` CLI keyring auth
