@@ -91,7 +91,7 @@ _wt_copy_idea_settings() {
   mkdir -p "$dst_idea"
 
   # Copy safe directories (no absolute paths)
-  for dir in codeStyles inspectionProfiles scopes dictionaries fileTemplates runConfigurations; do
+  for dir in codeStyles inspectionProfiles scopes dictionaries fileTemplates runConfigurations jsLinters; do
     [[ -d "$src_idea/$dir" ]] && _wt_cp_cow "$src_idea/$dir" "$dst_idea/$dir"
   done
 
@@ -115,8 +115,10 @@ _wt_copy_idea_settings() {
 EOF
   fi
 
-  # Copy misc.xml (SDK settings - uses SDK names, not paths)
-  [[ -f "$src_idea/misc.xml" ]] && _wt_cp_cow "$src_idea/misc.xml" "$dst_idea/misc.xml"
+  # Copy individual safe files
+  for file in misc.xml vcs.xml prettier.xml .gitignore; do
+    [[ -f "$src_idea/$file" ]] && _wt_cp_cow "$src_idea/$file" "$dst_idea/$file"
+  done
 
   # Skip: workspace.xml (absolute paths to open files, window state, search indexes)
 }
