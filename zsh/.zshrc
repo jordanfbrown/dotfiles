@@ -71,10 +71,8 @@ export ANDROID_HOME=$HOME/Library/Android/sdk
 export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/platform-tools"
 export PATH="$HOME/.local/bin:$PATH"
 
-export NEXUS_USERNAME="dev-read"
-export JIRA_EMAIL="***REMOVED***"
-
-export FORT_KNOX_GRPC_VERSION=1.72.0
+# Work-specific exports loaded from ~/.zsh_secrets:
+# NEXUS_USERNAME, JIRA_EMAIL, FORT_KNOX_GRPC_VERSION, WS_DIR, WS_SCRIPTS, WS_AWS_ROLE
 
 # https://github.com/ruby/openssl/issues/949
 export RUBYOPT="-r$HOME/.rubyopenssl_default_store.rb $RUBYOPT"
@@ -135,22 +133,17 @@ alias ftp="files-to-prompt"
 alias nx="pnpm nx"
 
 # =============================================================================
-# CUSTOM SCRIPT ALIASES
+# CUSTOM SCRIPT ALIASES (WS_DIR and WS_SCRIPTS defined in ~/.zsh_secrets)
 # =============================================================================
-alias gcai="~/wealthsimple/scripts/ai_commit/ai_commit.rb"
-alias reddit-scraper='mise exec --cd ~/wealthsimple/scripts/reddit_scraper -- ruby reddit_scraper.rb'
-alias staging-acls='mise exec --cd ~/wealthsimple/scripts/generate_staging_acls -- ruby generate_acl_jwts.rb'
-alias git-file-history="~/wealthsimple/scripts/git_file_history/analyze_file_history.rb"
-alias mermaid-view="~/wealthsimple/scripts/mermaid-view"
-alias cpr='JIRA_API_KEY=$(op read op://Employee/JIRA_API_KEY/credential) GITHUB_TOKEN=$(gh auth token) ~/wealthsimple/scripts/create_pull_request/create_pull_request.rb'
-alias ft="~/wealthsimple/scripts/run-femr-test.js"
+alias gcai="$WS_SCRIPTS/ai_commit/ai_commit.rb"
+alias reddit-scraper='mise exec --cd $WS_SCRIPTS/reddit_scraper -- ruby reddit_scraper.rb'
+alias staging-acls='mise exec --cd $WS_SCRIPTS/generate_staging_acls -- ruby generate_acl_jwts.rb'
+alias git-file-history="$WS_SCRIPTS/git_file_history/analyze_file_history.rb"
+alias mermaid-view="$WS_SCRIPTS/mermaid-view"
+alias cpr='JIRA_API_KEY=$(op read op://Employee/JIRA_API_KEY/credential) GITHUB_TOKEN=$(gh auth token) $WS_SCRIPTS/create_pull_request/create_pull_request.rb'
+alias ft="$WS_SCRIPTS/run-femr-test.js"
 alias fkl="git stash && gco main && git pull && git stash apply && bundle && bundle exec rake db:migrate"
-alias dl="~/wealthsimple/daily-log/dl"
-
-# =============================================================================
-# UTILITY ALIASES
-# =============================================================================
-alias my-prod-id="echo ***REMOVED*** | pbcopy"
+alias dl="$WS_DIR/daily-log/dl"
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -188,20 +181,10 @@ check-vpn() {
   return 0
 }
 
-av-staging() {
-  VAULT_PASS=$(op read "op://Engineering/***REMOVED***/password") 
-  if [ $? -eq 0 ]; then
-    ansible-vault view "$@" --vault-password-file <(echo "$VAULT_PASS")
-  else
-    echo "Error: Failed to retrieve password from 1Password"
-    return 1
-  fi
-}
-
 aws-creds() {
   if ! aws sts get-caller-identity &>/dev/null; then
     echo "No valid AWS credentials found. Running assume..."
-    assume ***REMOVED***
+    assume $WS_AWS_ROLE
   fi
 }
 
@@ -234,7 +217,7 @@ gcj() {
   
   if [[ -n "$ticket_id" ]]; then
     echo "Using Jira ticket: $ticket_id"
-    JIRA_API_KEY=$(op read op://Employee/JIRA_API_KEY/credential) /Users/jordan.brown/wealthsimple/scripts/git_commit_jira/commit_from_jira.rb "$ticket_id"
+    JIRA_API_KEY=$(op read op://Employee/JIRA_API_KEY/credential) $WS_SCRIPTS/git_commit_jira/commit_from_jira.rb "$ticket_id"
   else
     echo "No Jira ticket ID provided and couldn't extract one from branch name."
     echo "Usage: gcj [TICKET_ID]"
@@ -276,7 +259,7 @@ nxa() {
 # EXTERNAL INTEGRATIONS
 # =============================================================================
 source "$HOME/.git-worktree-functions.zsh"
-source /Users/jordan.brown/.config/wealthsimple/direnv/config.zsh
+[[ -f "$HOME/.config/wealthsimple/direnv/config.zsh" ]] && source "$HOME/.config/wealthsimple/direnv/config.zsh"
 source $(brew --prefix)/share/ws-cli/shell/activate.zsh
 eval "$(direnv hook zsh)"
 eval "$(mise activate zsh)"

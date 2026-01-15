@@ -4,7 +4,7 @@
   br = branch
 
 [user]
-	email = ***REMOVED***
+	email = jordan.brown@wealthsimple.com
 	signingkey = ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDdlTFCSr69nvLX1DBXhgIIxSFrFWpK5JzU7qzSMY5H8
 
 [url "ssh://git@github.com/"]

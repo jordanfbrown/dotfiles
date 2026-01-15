@@ -134,7 +134,7 @@ _wt_get_untracked_pattern() {
   fi
 }
 
-# Get the repo parent directory (e.g., ~/wealthsimple/front-end-monorepo)
+# Get the repo parent directory (e.g., ${WS_DIR:-~/wealthsimple}/front-end-monorepo)
 _wt_repo_parent() {
   local git_root=$(git rev-parse --show-toplevel 2>/dev/null)
   [[ -z "$git_root" ]] && return 1
@@ -156,7 +156,7 @@ _wt_find_main_from_worktree() {
 # Find a worktree globally across all repos in ~/wealthsimple
 _wt_find_global() {
   local branch="$1"
-  for repo_dir in ~/wealthsimple/*/; do
+  for repo_dir in ${WS_DIR:-~/wealthsimple}/*/; do
     local candidate="$repo_dir$branch"
     if [[ -d "$candidate" && -e "$candidate/.git" ]]; then
       echo "$candidate"
@@ -168,7 +168,7 @@ _wt_find_global() {
 
 # List all worktrees across all repos in ~/wealthsimple
 _wt_list_all_worktrees() {
-  for repo_dir in ~/wealthsimple/*/main; do
+  for repo_dir in ${WS_DIR:-~/wealthsimple}/*/main; do
     if [[ -d "$repo_dir/.git" ]]; then
       git -C "$repo_dir" worktree list --porcelain 2>/dev/null | grep '^worktree ' | awk '{print $2}'
     fi

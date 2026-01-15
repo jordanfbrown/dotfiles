@@ -1,0 +1,37 @@
+# Gitleaks configuration for dotfiles repo
+# https://github.com/gitleaks/gitleaks
+
+title = "dotfiles gitleaks config"
+
+[extend]
+# Use the default gitleaks rules as a base
+useDefault = true
+
+[allowlist]
+description = "Allowlist for dotfiles repo"
+
+# Paths to ignore
+paths = [
+    '''\.git/''',
+    '''vim/\.vim/plugged/''',
+    '''tmux/\.tmux/plugins/''',
+]
+
+# Patterns that are allowed (not secrets)
+regexes = [
+    # 1Password references (op://vault/item/field)
+    '''op://[\w\-]+/[\w\-]+/[\w\-]+''',
+    # Placeholder/example patterns
+    '''YOUR_.*_HERE''',
+    '''REPLACE_.*''',
+    '''<.*_TOKEN>''',
+    '''example\.com''',
+    # Common dotfile placeholders
+    '''XXXXXXXX''',
+    '''xxxxxxxx''',
+]
+
+# Specific commits to ignore (add as needed)
+# commits = [
+#     "abc123...",
+# ]
