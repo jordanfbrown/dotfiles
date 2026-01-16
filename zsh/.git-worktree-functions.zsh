@@ -61,8 +61,8 @@ _wt_setup_environment() {
     _wt_copy_idea_settings "$main_path/.idea" "$worktree_path/.idea" "$main_dir_name" "$dir_name"
   fi
 
-  # Copy CLAUDE.local.md
-  [[ -f "$main_path/CLAUDE.local.md" ]] && _wt_cp_cow "$main_path/CLAUDE.local.md" "$worktree_path/CLAUDE.local.md"
+  # Symlink CLAUDE.local.md so changes persist across worktrees
+  [[ -f "$main_path/CLAUDE.local.md" ]] && ln -sf "$main_path/CLAUDE.local.md" "$worktree_path/CLAUDE.local.md"
 
   # direnv allow
   [[ -f "$worktree_path/.envrc" ]] && direnv allow "$worktree_path"
