@@ -97,8 +97,10 @@ _wt_copy_idea_settings() {
 
   # Copy and rename .iml file to match new worktree name
   # .iml files use $MODULE_DIR$ so exclusions are relative and safe
-  if [[ -f "$src_idea/$src_dir_name.iml" ]]; then
-    _wt_cp_cow "$src_idea/$src_dir_name.iml" "$dst_idea/$dst_dir_name.iml"
+  # Find the .iml file dynamically (name matches project, not directory)
+  local src_iml=$(find "$src_idea" -maxdepth 1 -name "*.iml" -type f | head -1)
+  if [[ -n "$src_iml" ]]; then
+    _wt_cp_cow "$src_iml" "$dst_idea/$dst_dir_name.iml"
   fi
 
   # Create modules.xml pointing to correctly-named .iml
