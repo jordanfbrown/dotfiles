@@ -64,6 +64,14 @@ _wt_setup_environment() {
   # Symlink CLAUDE.local.md so changes persist across worktrees
   [[ -f "$main_path/CLAUDE.local.md" ]] && ln -sf "$main_path/CLAUDE.local.md" "$worktree_path/CLAUDE.local.md"
 
+  # Copy generated schemas (front-end-monorepo)
+  if [[ -d "$main_path/.ws-schemas" ]]; then
+    _wt_cp_cow "$main_path/.ws-schemas" "$worktree_path/.ws-schemas"
+  elif [[ "$(basename "$(dirname "$main_path")")" == "front-end-monorepo" ]]; then
+    _wt_yellow "Downloading schemas in background..."
+    (cd "$worktree_path" && pnpm download-schemas) &
+  fi
+
   # direnv allow
   [[ -f "$worktree_path/.envrc" ]] && direnv allow "$worktree_path"
 
