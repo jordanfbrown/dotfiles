@@ -10,7 +10,7 @@ useDefault = true
 [allowlist]
 description = "Allowlist for dotfiles repo"
 
-# Paths to ignore
+# Paths to ignore (vendor/plugin directories only)
 paths = [
     '''\.git/''',
     '''vim/\.vim/plugged/''',
@@ -29,6 +29,8 @@ regexes = [
     # Common dotfile placeholders
     '''XXXXXXXX''',
     '''xxxxxxxx''',
+    # Public read-only Nexus username
+    '''NEXUS_USERNAME.*dev-read''',
 ]
 
 # Specific commits to ignore (add as needed)
