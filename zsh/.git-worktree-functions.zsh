@@ -130,7 +130,11 @@ EOF
     [[ -f "$src_idea/$file" ]] && _wt_cp_cow "$src_idea/$file" "$dst_idea/$file"
   done
 
-  # Skip: workspace.xml (absolute paths to open files, window state, search indexes)
+  # Copy workspace.xml with paths rewritten to new worktree
+  # (Contains ESLint manual config, prettier settings, etc.)
+  if [[ -f "$src_idea/workspace.xml" ]]; then
+    sed "s|$(dirname "$src_idea")|$(dirname "$dst_idea")|g" "$src_idea/workspace.xml" > "$dst_idea/workspace.xml"
+  fi
 }
 
 # Open correct IDE based on project type
