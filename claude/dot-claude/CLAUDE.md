@@ -78,13 +78,12 @@ Always adapt to the specific project's conventions rather than imposing global p
 
 ## Visual Diagrams
 - **Mermaid Diagrams**: When creating or explaining system architecture, code flows, or process diagrams, always use the mermaid_view tool to display diagrams visually
-- **Command**: `~/wealthsimple/scripts/mermaid_view/mermaid_view.js "diagram-code-here"`
+- **Command**: `~/wealthsimple/scratchpad/jordanfbrown/mermaid_view/mermaid_view.js "diagram-code-here"`
 - **Usage**: Automatically run this command after creating any Mermaid diagram code to open it in the browser for visual review
 - **Note**: Now uses consolidated JavaScript implementation (was previously Ruby + JavaScript)
 
 ## GitHub CLI
-- `gh` commands in Claude Code require unsetting `GITHUB_TOKEN` environment variable first: `unset GITHUB_TOKEN && gh <command>`
-- This allows `gh` to use keyring authentication instead of the invalid token in Claude Code's environment
+- `gh` commands use keyring authentication automatically - no special handling required
 
 ## Security Reminders
 - Never commit secrets, API keys, or sensitive data
