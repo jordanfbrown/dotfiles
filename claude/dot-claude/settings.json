@@ -1,6 +1,11 @@
 {
   "permissions": {
     "allow": [
+      "Read(~/.claude/**)",
+      "Read(~/dot-claude/**)",
+      "Read(~/.claude.json)",
+      "Read(~/wealthsimple/**)",
+      "Read(~/dotfiles/**)",
       "Bash(pwd)",
       "Bash(ls:*)",
       "Bash(whoami)",
@@ -16,25 +21,9 @@
       "Bash(sed:*)",
       "Bash(echo:*)",
       "Bash(printf:*)",
-      "Bash(git :*)",
-      "Bash(git rev-parse --abbrev-ref origin/HEAD:*)",
-      "Bash(gh :*)",
-      "Bash(gh pr list:*)",
-      "Bash(gh pr view:*)",
-      "Bash(gh pr diff:*)",
-      "Bash(gh pr checks:*)",
-      "Bash(gh pr api:*)",
-      "Bash(unset :*)",
-      "Bash(unset GITHUB_TOKEN)",
-      "Bash(unset GITHUB_TOKEN && gh :*)",
-      "Bash(unset GITHUB_TOKEN && gh pr list:*)",
-      "Bash(unset GITHUB_TOKEN && gh pr view:*)",
-      "Bash(unset GITHUB_TOKEN && gh pr diff:*)",
-      "Bash(unset GITHUB_TOKEN && gh pr checks:*)",
-      "Bash(unset GITHUB_TOKEN && gh api:*)",
-      "Bash(jira :*)",
-      "Bash(JIRA_API_TOKEN=* jira :*)",
-      "Bash(JIRA_API_TOKEN=$(op read op://Employee/JIRA_API_KEY/credential) jira :*)",
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "Bash(jira:*)",
       "Bash(docker ps:*)",
       "Bash(docker logs:*)",
       "Bash(docker inspect:*)",
@@ -47,13 +36,7 @@
       "Bash(mise test:*)",
       "Bash(mise dc:ps)",
       "Bash(mise dc:logs)",
-      "Bash(./mvnw compile)",
-      "Bash(./mvnw compile:*)",
-      "Bash(./mvnw test)",
-      "Bash(./mvnw test:*)",
-      "Bash(./mvnw clean)",
-      "Bash(./mvnw ktlint:format)",
-      "Bash(./mvnw verify)",
+      "Bash(./mvnw :*)",
       "Bash(sm3:*)",
       "Bash(./scripts/*)",
       "Bash(claude doctor)",
@@ -84,23 +67,62 @@
       "mcp__glean__search_glean",
       "mcp__temporal__fetch_temporal_workflows",
       "mcp__temporal__fetch_workflow_history",
-      "Bash(* jira issue view *)",
       "Bash(ruby -c :*)",
+      "Skill(mermaid-diagrams)",
+      "Skill(writing-skills)",
+      "Skill(creating-subagents)",
+      "Skill(pptx)",
+      "Skill(motion-react)",
       "Skill(jira-cli)",
-      "Skill(femr-testing)",
+      "Skill(jira-to-beads)",
+      "Skill(french-translations)",
+      "Skill(feature-flag-removal)",
+      "Skill(gql-sdk-creation)",
+      "Skill(nexus-publishing)",
+      "Skill(create-pull-request)",
+      "Skill(front-end-monorepo-testing)",
       "Skill(handoff)",
       "Skill(pickup)",
+      "Skill(update-ticket)",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:condition-based-waiting)",
+      "Skill(superpowers:defense-in-depth)",
+      "Skill(superpowers:dispatching-parallel-agents)",
+      "Skill(superpowers:executing-plans)",
+      "Skill(superpowers:finishing-a-development-branch)",
+      "Skill(superpowers:receiving-code-review)",
+      "Skill(superpowers:requesting-code-review)",
+      "Skill(superpowers:root-cause-tracing)",
+      "Skill(superpowers:sharing-skills)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Skill(superpowers:systematic-debugging)",
+      "Skill(superpowers:test-driven-development)",
+      "Skill(superpowers:testing-anti-patterns)",
+      "Skill(superpowers:testing-skills-with-subagents)",
+      "Skill(superpowers:using-git-worktrees)",
+      "Skill(superpowers:using-superpowers)",
+      "Skill(superpowers:verification-before-completion)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:writing-skills)",
+      "Skill(superpowers:brainstorm)",
+      "Skill(superpowers:execute-plan)",
+      "Skill(superpowers:write-plan)",
+      "Skill(edge-skills:schema-migration-cleanup)",
+      "Skill(edge-skills:generating-scenario-driven-tests)",
+      "Skill(graphite:graphite)",
+      "Skill(pr-review-toolkit:review-pr)",
+      "Skill(playwright-skill:playwright-skill)",
       "Bash(pnpm test:*)",
-      "Bash(pnpm eslint:*)"
+      "Bash(pnpm eslint:*)",
+      "Bash(bd *)",
+      "Bash(wc -l :*)"
     ],
     "deny": [
       "Read(~/**)",
-      "Read($HOME/**)",
       "Read(**/.env*)",
       "Read(**/credentials*)",
       "Read(**/secrets*)",
       "Write(~/**)",
-      "Write($HOME/**)",
       "Write(**/.env*)",
       "Write(/etc/**)",
       "Write(/System/**)",
@@ -110,12 +132,10 @@
       "Write(/bin/**)",
       "Write(/sbin/**)",
       "Edit(~/**)",
-      "Edit($HOME/**)",
       "Edit(**/.env*)",
       "Bash(printenv:*)",
       "Bash(env:*)",
       "Bash(cd ~/*)",
-      "Bash(cd $HOME/*)",
       "Bash(cd /)",
       "Bash(cd /System/*)",
       "Bash(cd /Library/*)",
@@ -148,30 +168,27 @@
       "Bash(openssl :*)",
       "Bash(history :*)",
       "Bash(source ~/*)",
-      "Bash(source $HOME/*)",
       "Bash(. ~/*)",
-      "Bash(. $HOME/*)",
       "Bash(python -c:*)",
       "Bash(python2 -c:*)",
       "Bash(python3 -c:*)",
       "Bash(perl -e:*)",
       "Bash(ruby -e:*)",
       "Bash(node -e:*)",
-      "Bash(git :*-n:*)",
-      "Bash(git :*--no-verify:*)",
-      "Bash(git :*-n:*)"
+      "Bash(git:*-n:*)",
+      "Bash(git:*--no-verify:*)"
     ],
     "ask": [
-      "Bash(git clean :*)",
-      "Bash(git reset --hard :*)",
+      "Bash(git clean:*)",
+      "Bash(git reset --hard:*)",
       "Bash(git push -f:*)",
       "Bash(git push --force:*)",
-      "Bash(git :*--force:*)",
-      "Bash(git branch -D :*)",
-      "Bash(git commit :*)",
-      "Bash(docker stop :*)",
-      "Bash(docker kill :*)",
-      "Bash(docker-compose down :*)",
+      "Bash(git:*--force:*)",
+      "Bash(git branch -D:*)",
+      "Bash(git commit:*)",
+      "Bash(docker stop:*)",
+      "Bash(docker kill:*)",
+      "Bash(docker-compose down:*)",
       "Bash(rm -r:*)",
       "Bash(rm -rf:*)",
       "Bash(kill -9:*)",
@@ -189,7 +206,7 @@
   },
   "model": "opus",
   "hooks": {
-    "Stop": [
+    "PermissionRequest": [
       {
         "hooks": [
           {
@@ -199,7 +216,29 @@
         ]
       }
     ],
-    "PermissionRequest": [
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bd prime"
+          }
+        ]
+      }
+    ],
+    "Stop": [
       {
         "hooks": [
           {
@@ -215,12 +254,13 @@
     "command": "~/.claude/statusline-script.sh"
   },
   "enabledPlugins": {
-    "edge-skills@ws-claude-marketplace": true,
-    "superpowers@ws-claude-marketplace": true,
-    "graphite@ws-claude-marketplace": true,
-    "typescript-lsp@claude-plugins-official": true,
     "code-simplifier@claude-plugins-official": true,
-    "pr-review-toolkit@claude-plugins-official": true
+    "edge-skills@ws-claude-marketplace": true,
+    "graphite@ws-claude-marketplace": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "superpowers@ws-claude-marketplace": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "playwright-skill@playwright-skill": true
   },
   "alwaysThinkingEnabled": true
 }
