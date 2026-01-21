@@ -142,6 +142,7 @@ alias git-file-history="$WS_SCRIPTS/git_file_history/analyze_file_history.rb"
 alias mermaid-view="$WS_SCRIPTS/mermaid-view"
 alias cpr='JIRA_API_KEY=$(op read op://Employee/JIRA_API_KEY/credential) GITHUB_TOKEN=$(gh auth token) $WS_SCRIPTS/create_pull_request/create_pull_request.rb'
 alias ft="$WS_SCRIPTS/run-femr-test.js"
+alias r="~/wealthsimple/scratchpad/jordanfbrown/ralph/ralph.sh"
 alias fkl="git stash && gco main && git pull && git stash apply && bundle && bundle exec rake db:migrate"
 alias dl="$WS_DIR/daily-log/dl"
 
@@ -227,7 +228,7 @@ gcj() {
 
 b() {
   local branch_name
-  
+
   # Check if argument contains letters/hyphens (like proj-411 or hhmm-400)
   if [[ "$1" =~ [a-zA-Z-] ]]; then
     branch_name="jb/$1"
@@ -235,8 +236,17 @@ b() {
     # Default to jb/hhmm-${number} format for bare numbers
     branch_name="jb/hhmm-$1"
   fi
-  
+
   git checkout -b "$branch_name" 2> /dev/null || git checkout "$branch_name"
+}
+
+# Fix branch after parent was squash-merged to main
+gfix() {
+  echo "Fetching latest main..."
+  git fetch origin main
+  echo "Rebasing onto origin/main..."
+  echo "Hint: If conflicts on OLD parent commits, use 'git rebase --skip'"
+  git rebase origin/main
 }
 
 # =============================================================================
@@ -260,7 +270,7 @@ nxa() {
 # =============================================================================
 source "$HOME/.git-worktree-functions.zsh"
 [[ -f "$HOME/.config/wealthsimple/direnv/config.zsh" ]] && source "$HOME/.config/wealthsimple/direnv/config.zsh"
-source $(brew --prefix)/share/ws-cli/shell/activate.zsh
+
 eval "$(direnv hook zsh)"
 eval "$(mise activate zsh)"
 
@@ -268,7 +278,3 @@ eval "$(mise activate zsh)"
 # ENVIRONMENT CLEANUP
 # =============================================================================
 unset GITHUB_TOKEN
-
-# BEGIN wealthsimple reposerver
-source "$HOME/.local/share/ws-cli/rc/reposerver/env.sh"
-# END wealthsimple reposerver
