@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(superpowers:brainstorming)",
+      "Bash(source:*)",
+      "Bash(_wt_parse_pr_url \"https://github.com/wealthsimple/fort-knox/pull/21493/files\")",
+      "Bash(_wt_parse_pr_url \"https://github.com/wealthsimple/fort-knox\")",
+      "Bash(git -C ~/wealthsimple/fort-knox/main worktree list:*)",
+      "Bash(git -C /Users/jordan.brown/dotfiles status)",
+      "Bash(git fetch:*)",
+      "Bash(gitleaks version)",
+      "WebFetch(domain:intellij-support.jetbrains.com)"
+    ]
+  }
+}

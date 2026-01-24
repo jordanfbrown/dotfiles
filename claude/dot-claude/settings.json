@@ -1,4 +1,7 @@
 {
+  "env": {
+    "ENABLE_TOOL_SEARCH": "true"
+  },
   "permissions": {
     "allow": [
       "Read(~/.claude/**)",
@@ -185,7 +188,6 @@
       "Bash(git push --force:*)",
       "Bash(git:*--force:*)",
       "Bash(git branch -D:*)",
-      "Bash(git commit:*)",
       "Bash(docker stop:*)",
       "Bash(docker kill:*)",
       "Bash(docker-compose down:*)",
@@ -206,16 +208,6 @@
   },
   "model": "opus",
   "hooks": {
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/notify-if-unfocused.sh"
-          }
-        ]
-      }
-    ],
     "PreCompact": [
       {
         "matcher": "",
@@ -237,16 +229,6 @@
           }
         ]
       }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/notify-if-unfocused.sh"
-          }
-        ]
-      }
     ]
   },
   "statusLine": {
@@ -261,9 +243,6 @@
     "superpowers@ws-claude-marketplace": true,
     "typescript-lsp@claude-plugins-official": true,
     "playwright-skill@playwright-skill": true
-  },
-  "env": {
-    "ENABLE_TOOL_SEARCH": "true"
   },
   "alwaysThinkingEnabled": true
 }

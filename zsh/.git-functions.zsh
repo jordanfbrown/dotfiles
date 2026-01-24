@@ -1,5 +1,5 @@
-# Git Worktree Functions
-# Streamlined worktree management with copy-on-write support
+# Git Functions
+# Worktree management, branch cleanup, and other git utilities
 
 # =============================================================================
 # HELPER FUNCTIONS
@@ -612,4 +612,89 @@ wtr() {
   local window_name=$(_wt_window_name "$worktree_path")
   _wt_tmux_review "$window_name" "$worktree_path" "$pr_number" "$repo_name" "$pr_title"
   _wt_open_ide "$worktree_path"
+}
+
+# =============================================================================
+# GIT CLEANUP FUNCTIONS
+# =============================================================================
+
+# Detect the main branch (master or main)
+_git_main_branch() {
+  # Try to get the default branch from remote
+  local ref=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null)
+  if [[ -n "$ref" ]]; then
+    echo "${ref##*/}"
+    return
+  fi
+
+  # Fallback: check which exists locally
+  if git show-ref --verify --quiet refs/heads/main; then
+    echo "main"
+  else
+    echo "master"
+  fi
+}
+
+# Check if a branch has been merged into main (handles squash merges)
+_is_branch_merged() {
+  local main="$1"
+  local branch="$2"
+
+  # Check 1: Regular merge - branch is ancestor of main
+  if git merge-base --is-ancestor "$branch" "$main" 2>/dev/null; then
+    return 0
+  fi
+
+  # Check 2: Squash merge - use merge-tree to see if merging would change anything
+  # Git 2.38+ supports --write-tree which gives us the result tree
+  local result_tree main_tree
+  if result_tree=$(git merge-tree --write-tree "$main" "$branch" 2>/dev/null); then
+    main_tree=$(git rev-parse "${main}^{tree}" 2>/dev/null)
+    [[ "$result_tree" == "$main_tree" ]]
+    return $?
+  fi
+
+  # Fallback for older git: check if trees are identical (branch content matches main)
+  git diff --quiet "$main" "$branch" -- 2>/dev/null
+}
+
+# gbclean - Clean up merged branches (including squash-merged)
+# Usage: gbclean       - Dry run (show what would be deleted)
+#        gbclean!      - Actually delete branches
+gbclean() {
+  local main=$(_git_main_branch)
+
+  git checkout -q "$main" 2>/dev/null
+  git pull -q 2>/dev/null
+
+  echo "Checking branches against $main..."
+  echo
+
+  for branch in $(git for-each-ref --format='%(refname:short)' refs/heads/ | grep -v "^${main}$"); do
+    if _is_branch_merged "$main" "$branch"; then
+      _wt_green "✓ $branch (merged)"
+    else
+      echo "✗ $branch (has unmerged changes)"
+    fi
+  done
+
+  echo
+  _wt_yellow "Run 'gbclean!' to delete merged branches"
+}
+
+gbclean!() {
+  local main=$(_git_main_branch)
+
+  git checkout -q "$main" 2>/dev/null
+  git pull -q 2>/dev/null
+
+  echo "Deleting branches merged into $main..."
+  echo
+
+  for branch in $(git for-each-ref --format='%(refname:short)' refs/heads/ | grep -v "^${main}$"); do
+    if _is_branch_merged "$main" "$branch"; then
+      git branch -D "$branch"
+      _wt_green "Deleted: $branch"
+    fi
+  done
 }

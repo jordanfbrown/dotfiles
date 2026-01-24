@@ -48,8 +48,8 @@ If none found, use default template.
 - Technical changes from diff analysis
 - Link: `https://wealthsimple.atlassian.net/browse/TICKET-ID`
 
-### 6. Preview and Confirm
-Show generated PR title and body to user before creating.
+### 6. Preview
+Show generated PR title and body to user
 
 ### 7. Create PR
 ```bash

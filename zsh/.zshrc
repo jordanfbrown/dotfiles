@@ -131,6 +131,7 @@ alias be="bundle exec"
 alias s="be rspec"
 alias ftp="files-to-prompt"
 alias nx="pnpm nx"
+alias fix-metro='watchman shutdown-server && echo "Watchman restarted - hot reload should work now"'
 
 # =============================================================================
 # CUSTOM SCRIPT ALIASES (WS_DIR and WS_SCRIPTS defined in ~/.zsh_secrets)
@@ -153,7 +154,7 @@ c() {
   claude --dangerously-skip-permissions "$@"
 }
 
-go() {
+gro() {
   local github_url="$1"
   local graphite_url=$(echo "$github_url" | sed 's|github.com|app.graphite.com/github/pr|' | sed 's|/pull/|/|')
   open "$graphite_url"
@@ -268,7 +269,7 @@ nxa() {
 # =============================================================================
 # EXTERNAL INTEGRATIONS
 # =============================================================================
-source "$HOME/.git-worktree-functions.zsh"
+source "$HOME/.git-functions.zsh"
 [[ -f "$HOME/.config/wealthsimple/direnv/config.zsh" ]] && source "$HOME/.config/wealthsimple/direnv/config.zsh"
 
 eval "$(direnv hook zsh)"
