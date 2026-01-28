@@ -12,6 +12,19 @@
 - Respect existing indentation style (spaces vs tabs, count)
 - Follow existing naming conventions found in the codebase
 
+## Looking Up Documentation
+Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
+
+## Browser Automation
+
+Use `npx agent-browser` for web automation. Run `npx agent-browser --help` for all commands.
+
+Core workflow:
+1. `npx agent-browser open <url>` - Navigate to page
+2. `npx agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
+3. `npx agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
+4. Re-snapshot after page changes
+
 ## Common Commands to Check First
 When working on a project, always check for these common commands:
 
@@ -77,10 +90,7 @@ nx lint
 Always adapt to the specific project's conventions rather than imposing global preferences.
 
 ## Visual Diagrams
-- **Mermaid Diagrams**: When creating or explaining system architecture, code flows, or process diagrams, always use the mermaid_view tool to display diagrams visually
-- **Command**: `~/wealthsimple/scratchpad/jordanfbrown/mermaid_view/mermaid_view.js "diagram-code-here"`
-- **Usage**: Automatically run this command after creating any Mermaid diagram code to open it in the browser for visual review
-- **Note**: Now uses consolidated JavaScript implementation (was previously Ruby + JavaScript)
+- **Mermaid Diagrams**: When creating or explaining system architecture, reference the Mermaid diagrams skill
 
 ## GitHub CLI
 - `gh` commands use keyring authentication automatically - no special handling required
@@ -89,15 +99,3 @@ Always adapt to the specific project's conventions rather than imposing global p
 - Never commit secrets, API keys, or sensitive data
 - Follow security best practices for the specific language/framework
 - Be cautious with file permissions and access patterns
-
-## NPM 401 errors
-- If we receive the following error: Error: error Error: https://wealthsimple-711984989527.d.codeartifact.us-east-1.amazonaws.com/npm/helium3/@apollo/cache-control-types/-/cache-control-types-1.0.3.tgz: Request failed "401 Unauthorized"
-- We need to login to aws codeartifact:
-
-```
-# will require user to do something in browser
-aws sso login --profile=package-puller 
-
-# after aws sso login completes
-aws codeartifact login --profile=package-puller --tool npm --domain wealthsimple --repository helium3
-```

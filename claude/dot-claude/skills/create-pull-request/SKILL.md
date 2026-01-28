@@ -31,12 +31,18 @@ git diff BASE_BRANCH..HEAD
 Summarize: what changed, why it changed, technical details.
 
 ### 4. Find PR Template
-Search in order:
-1. `.github/pull_request_template.md`
-2. `.github/PULL_REQUEST_TEMPLATE.md`
-3. `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`
-4. `docs/pull_request_template.md`
-5. `PULL_REQUEST_TEMPLATE.md`
+Search using case-insensitive glob:
+```bash
+find .github -iname '*pull_request_template*' 2>/dev/null | head -1
+```
+
+Or check these paths in order:
+1. `.github/PULL_REQUEST_TEMPLATE.md`
+2. `.github/pull_request_template.md`
+3. `.github/PULL_REQUEST_TEMPLATE/PULL_REQUEST_TEMPLATE.md`
+4. `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`
+5. `docs/pull_request_template.md`
+6. `PULL_REQUEST_TEMPLATE.md`
 
 If none found, use default template.
 

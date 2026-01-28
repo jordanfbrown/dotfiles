@@ -66,7 +66,20 @@
       "WebFetch(domain:kotlinlang.org)",
       "mcp__preset__get_database_connections",
       "mcp__preset__query_preset",
+      "mcp__preset__get_datasets",
       "mcp__datadog__search_datadog_logs_freeform_query",
+      "mcp__datadog__search_datadog_logs",
+      "mcp__datadog__analyze_datadog_logs",
+      "mcp__datadog__search_datadog_service_dependencies",
+      "mcp__datadog__search_datadog_spans",
+      "mcp__datadog__search_datadog_metrics",
+      "mcp__datadog__get_datadog_metric",
+      "mcp__datadog__get_datadog_trace",
+      "mcp__sourcegraph__keyword_search",
+      "mcp__sourcegraph__read_file",
+      "mcp__sourcegraph__nls_search",
+      "mcp__sourcegraph__list_repos",
+      "mcp__sourcegraph__list_files",
       "mcp__glean__search_glean",
       "mcp__temporal__fetch_temporal_workflows",
       "mcp__temporal__fetch_workflow_history",
@@ -242,7 +255,8 @@
     "pr-review-toolkit@claude-plugins-official": true,
     "superpowers@ws-claude-marketplace": true,
     "typescript-lsp@claude-plugins-official": true,
-    "playwright-skill@playwright-skill": true
+    "playwright-skill@playwright-skill": true,
+    "pg@aiguide": true
   },
   "alwaysThinkingEnabled": true
 }

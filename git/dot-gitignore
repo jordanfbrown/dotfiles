@@ -4,3 +4,4 @@ docs/plans/
 .zsh_secrets
 .agent
 .beads
+.claude/settings.local.json
