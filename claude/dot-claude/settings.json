@@ -242,6 +242,36 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && echo working > \"/tmp/claude-pane-${TMUX_PANE//[%.]/_}\""
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && echo permission > \"/tmp/claude-pane-${TMUX_PANE//[%.]/_}\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && echo done > \"/tmp/claude-pane-${TMUX_PANE//[%.]/_}\""
+          }
+        ]
+      }
     ]
   },
   "statusLine": {

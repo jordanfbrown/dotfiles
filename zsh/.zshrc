@@ -267,6 +267,18 @@ nxa() {
 }
 
 # =============================================================================
+# CLAUDE STATUS HOOKS
+# =============================================================================
+# Clear Claude status indicator when user types a command
+# This resets the tmux status bar indicator for this pane
+_clear_claude_status() {
+  if [[ -n "$TMUX_PANE" ]]; then
+    rm -f "/tmp/claude-pane-${TMUX_PANE//[%.]/_}" 2>/dev/null
+  fi
+}
+preexec_functions+=(_clear_claude_status)
+
+# =============================================================================
 # EXTERNAL INTEGRATIONS
 # =============================================================================
 source "$HOME/.git-functions.zsh"
