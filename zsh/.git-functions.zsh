@@ -234,8 +234,13 @@ _wt_close_tmux_window() {
 
   # Check if we're in tmux and the window exists
   if [[ -n "$TMUX" ]]; then
-    if tmux list-windows -F '#{window_name}' | grep -qx "$window_name"; then
-      tmux kill-window -t "$window_name" 2>/dev/null
+    # Use -F for fixed string matching (window names contain / which is regex-safe but -F is safer)
+    if tmux list-windows -F '#{window_name}' | grep -Fqx "$window_name"; then
+      # Don't kill the window if we're currently in it - let the user handle that
+      local current_window=$(tmux display-message -p '#{window_name}')
+      if [[ "$current_window" != "$window_name" ]]; then
+        tmux kill-window -t "$window_name" 2>/dev/null
+      fi
     fi
   fi
 }
@@ -289,7 +294,7 @@ _wt_find_main_from_worktree() {
 _wt_find_global() {
   local branch="$1"
   for repo_dir in ${WS_DIR:-~/wealthsimple}/*/; do
-    local candidate="$repo_dir$branch"
+    local candidate="$repo_dir.worktrees/$branch"
     if [[ -d "$candidate" && -e "$candidate/.git" ]]; then
       echo "$candidate"
       return 0
@@ -299,20 +304,47 @@ _wt_find_global() {
 }
 
 # List all worktrees across all repos in ~/wealthsimple
+# Main worktrees are at ~/wealthsimple/<repo>/, feature worktrees at ~/wealthsimple/<repo>/.worktrees/<branch>/
 _wt_list_all_worktrees() {
-  for repo_dir in ${WS_DIR:-~/wealthsimple}/*/main; do
-    if [[ -d "$repo_dir/.git" ]]; then
+  for repo_dir in ${WS_DIR:-~/wealthsimple}/*/; do
+    # Check if this is a git repo (main worktree lives directly in repo_dir)
+    if [[ -d "$repo_dir.git" ]]; then
       git -C "$repo_dir" worktree list --porcelain 2>/dev/null | grep '^worktree ' | awk '{print $2}'
     fi
   done
 }
 
-# Get tmux window name from worktree path: <repo>/<branch>
+# Abbreviate repo name: front-end-monorepo → fem
+_wt_abbreviate_repo() {
+  local repo="$1"
+  local abbrev=""
+  for part in ${(s:-:)repo}; do
+    abbrev+="${part[1]}"
+  done
+  echo "$abbrev"
+}
+
+# Get tmux window name from worktree path: <abbrev-repo>/<branch>
+# Handles both structures:
+#   Main: ~/wealthsimple/<repo>/ → <abbrev>/main
+#   Feature: ~/wealthsimple/<repo>/.worktrees/<branch>/ → <abbrev>/<branch>
 _wt_window_name() {
   local worktree_path="$1"
-  local repo=$(basename "$(dirname "$worktree_path")")
   local branch=$(basename "$worktree_path")
-  echo "$repo/$branch"
+  local parent=$(basename "$(dirname "$worktree_path")")
+  local repo
+
+  if [[ "$parent" == ".worktrees" ]]; then
+    # Feature worktree: ~/wealthsimple/<repo>/.worktrees/<branch>
+    repo=$(basename "$(dirname "$(dirname "$worktree_path")")")
+  else
+    # Main worktree: ~/wealthsimple/<repo>
+    repo="$branch"
+    branch="main"
+  fi
+
+  local abbrev=$(_wt_abbreviate_repo "$repo")
+  echo "$abbrev/$branch"
 }
 
 # Switch to or create a tmux window for the worktree
@@ -370,20 +402,21 @@ _wt_fetch_pr_details() {
 }
 
 # Map GitHub repo name to local worktree path
+# Main worktrees are now directly at ~/wealthsimple/<repo>/ (not ~/wealthsimple/<repo>/main/)
 _wt_map_repo_to_path() {
   local owner="$1"
   local repo="$2"
 
-  # Try direct match first
-  local direct_path="$HOME/$owner/$repo/main"
+  # Try direct match first (main is now at repo root)
+  local direct_path="$HOME/$owner/$repo"
   if [[ -d "$direct_path/.git" ]]; then
     echo "$direct_path"
     return 0
   fi
 
-  # Fallback: FZF picker from all repos
+  # Fallback: FZF picker from all repos (find directories containing .git)
   _wt_yellow "Repo not found at $direct_path"
-  local repos=$(find ~/wealthsimple -maxdepth 2 -name main -type d 2>/dev/null | grep '/main$')
+  local repos=$(find ${WS_DIR:-~/wealthsimple} -maxdepth 2 -name ".git" -type d 2>/dev/null | xargs -I{} dirname {} | grep -v '/.worktrees/')
   local selected=$(echo "$repos" | fzf --prompt="Select repo for $owner/$repo: ")
 
   if [[ -z "$selected" ]]; then
@@ -432,9 +465,9 @@ wt() {
 
   _wt_require_tmux || return 1
 
-  # No args: FZF selection from ALL worktrees globally (excluding main)
+  # No args: FZF selection from ALL worktrees globally (only feature worktrees in .worktrees/)
   if [[ -z "$identifier" ]]; then
-    local worktrees=$(_wt_list_all_worktrees | grep -v '/main$')
+    local worktrees=$(_wt_list_all_worktrees | grep '/.worktrees/')
     local selected=$(echo "$worktrees" | fzf --prompt="Select worktree: ")
     [[ -z "$selected" ]] && return 0
     local window_name=$(_wt_window_name "$selected")
@@ -449,6 +482,8 @@ wt() {
   local global_match=$(_wt_find_global "$branch")
   if [[ -n "$global_match" ]]; then
     _wt_green "Switching to existing worktree: $global_match"
+    # Ensure direnv is allowed (may have been blocked after path changes)
+    [[ -f "$global_match/.envrc" ]] && direnv allow "$global_match" 2>/dev/null
     local window_name=$(_wt_window_name "$global_match")
     _wt_tmux_switch "$window_name" "$global_match"
     _wt_open_ide "$global_match"
@@ -457,21 +492,20 @@ wt() {
 
   # No global match - need to create
   local main_path=$(_wt_main_path)
-  local repo_parent
   local worktree_path
 
   if [[ -z "$main_path" ]]; then
     # Not in a repo - let user pick which repo to create in
-    local repos=$(find ~/wealthsimple -maxdepth 2 -name main -type d 2>/dev/null | grep '/main$')
+    # Main worktrees are now directly at ~/wealthsimple/<repo>/ (contain .git directory)
+    local repos=$(find ${WS_DIR:-~/wealthsimple} -maxdepth 2 -name ".git" -type d 2>/dev/null | xargs -I{} dirname {} | grep -v '/.worktrees/')
     local selected=$(echo "$repos" | fzf --prompt="Create '$branch' in which repo? ")
     [[ -z "$selected" ]] && return 0
     main_path="$selected"
-    repo_parent="$(dirname "$selected")"
-    worktree_path="$repo_parent/$branch"
-  else
-    repo_parent=$(_wt_repo_parent)
-    worktree_path="$repo_parent/$branch"
   fi
+
+  # Feature worktrees go in .worktrees/ subdirectory
+  mkdir -p "$main_path/.worktrees"
+  worktree_path="$main_path/.worktrees/$branch"
 
   # Create new worktree
   local current_branch=$(git -C "$main_path" branch --show-current)
@@ -515,13 +549,13 @@ wt() {
 #   wtd 123      - Delete jb-hhmm-123 worktree
 wtd() {
   local identifier="$1"
-  local repo_parent=$(_wt_repo_parent)
+  local main_path=$(_wt_main_path)
   local worktree_path
   local branch
 
-  # No args: FZF selection from ALL worktrees globally (excluding main)
+  # No args: FZF selection from ALL worktrees globally (only feature worktrees in .worktrees/)
   if [[ -z "$identifier" ]]; then
-    local worktrees=$(_wt_list_all_worktrees | grep -v '/main$')
+    local worktrees=$(_wt_list_all_worktrees | grep '/.worktrees/')
     local selected=$(echo "$worktrees" | fzf --prompt="Select worktree to delete: ")
     [[ -z "$selected" ]] && return 0
     worktree_path="$selected"
@@ -532,8 +566,8 @@ wtd() {
     local global_match=$(_wt_find_global "$branch")
     if [[ -n "$global_match" ]]; then
       worktree_path="$global_match"
-    elif [[ -n "$repo_parent" ]]; then
-      worktree_path="$repo_parent/$branch"
+    elif [[ -n "$main_path" ]]; then
+      worktree_path="$main_path/.worktrees/$branch"
     else
       _wt_red "Worktree '$branch' not found"
       return 1
@@ -630,6 +664,8 @@ wtr() {
   local existing_worktree=$(_wt_find_global "$worktree_dir")
   if [[ -n "$existing_worktree" ]]; then
     _wt_green "Switching to existing worktree: $existing_worktree"
+    # Ensure direnv is allowed (may have been blocked after path changes)
+    [[ -f "$existing_worktree/.envrc" ]] && direnv allow "$existing_worktree" 2>/dev/null
     local window_name=$(_wt_window_name "$existing_worktree")
     _wt_tmux_review "$window_name" "$existing_worktree" "$pr_number" "$repo_name" "$pr_title"
     _wt_open_ide "$existing_worktree"
@@ -644,8 +680,9 @@ wtr() {
     return 1
   fi
 
-  local repo_parent=$(dirname "$main_path")
-  local worktree_path="$repo_parent/$worktree_dir"
+  # Feature worktrees go in .worktrees/ subdirectory
+  mkdir -p "$main_path/.worktrees"
+  local worktree_path="$main_path/.worktrees/$worktree_dir"
 
   _wt_yellow "Creating worktree for $branch..."
 
@@ -656,8 +693,12 @@ wtr() {
   _wt_create_from_branch "$main_path" "$worktree_path" "$branch" false || return 1
 
   # Setup environment (untracked files, IDE settings, CLAUDE.local.md, direnv, submodules)
-  # Note: Skip mise trust for review worktrees to avoid symlink conflicts
   _wt_setup_environment "$main_path" "$worktree_path" "$worktree_dir"
+
+  # mise trust if mise config exists
+  if [[ -f "$worktree_path/.mise.toml" || -f "$worktree_path/mise.toml" || -f "$worktree_path/.tool-versions" ]]; then
+    mise trust "$worktree_path"
+  fi
 
   _wt_green "Created review worktree: $worktree_path"
   local window_name=$(_wt_window_name "$worktree_path")

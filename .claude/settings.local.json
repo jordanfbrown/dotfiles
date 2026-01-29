@@ -9,7 +9,11 @@
       "Bash(git -C /Users/jordan.brown/dotfiles status)",
       "Bash(git fetch:*)",
       "Bash(gitleaks version)",
-      "WebFetch(domain:intellij-support.jetbrains.com)"
+      "WebFetch(domain:intellij-support.jetbrains.com)",
+      "mcp__context7__query-docs",
+      "Bash(tmux show-options:*)",
+      "Bash(~/.tmux/claude-status.sh)",
+      "Bash(tmux list-windows:*)"
     ]
   }
 }

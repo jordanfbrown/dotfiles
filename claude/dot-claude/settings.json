@@ -243,6 +243,16 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -n \"$TMUX_PANE\" ] && echo done > \"/tmp/claude-pane-${TMUX_PANE//[%.]/_}\""
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "hooks": [

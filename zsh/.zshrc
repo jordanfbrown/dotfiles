@@ -63,7 +63,7 @@ source /opt/homebrew/opt/fzf/shell/completion.zsh
 # =============================================================================
 # Development tools
 export JAVA_HOME="$(/usr/libexec/java_home)"
-export EDITOR="code -w"
+export EDITOR="zed --wait"
 export AWS_REGION='us-east-1'
 
 # Android SDK

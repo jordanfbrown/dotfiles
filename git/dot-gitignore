@@ -5,3 +5,4 @@ docs/plans/
 .agent
 .beads
 .claude/settings.local.json
+.worktrees
