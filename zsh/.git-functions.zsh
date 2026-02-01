@@ -291,10 +291,20 @@ _wt_find_main_from_worktree() {
 }
 
 # Find a worktree globally across all repos in ~/wealthsimple
+# Supports both structures:
+#   New: ~/wealthsimple/<repo>/.worktrees/<branch>/
+#   Old: ~/wealthsimple/<repo>/<branch>/ (sibling of main/)
 _wt_find_global() {
   local branch="$1"
   for repo_dir in ${WS_DIR:-~/wealthsimple}/*/; do
+    # New structure: worktrees in .worktrees/
     local candidate="$repo_dir.worktrees/$branch"
+    if [[ -d "$candidate" && -e "$candidate/.git" ]]; then
+      echo "$candidate"
+      return 0
+    fi
+    # Old structure: worktrees as siblings of main/
+    candidate="$repo_dir$branch"
     if [[ -d "$candidate" && -e "$candidate/.git" ]]; then
       echo "$candidate"
       return 0
@@ -304,12 +314,17 @@ _wt_find_global() {
 }
 
 # List all worktrees across all repos in ~/wealthsimple
-# Main worktrees are at ~/wealthsimple/<repo>/, feature worktrees at ~/wealthsimple/<repo>/.worktrees/<branch>/
+# Supports both structures:
+#   New: ~/wealthsimple/<repo>/.git with .worktrees/<branch>/
+#   Old: ~/wealthsimple/<repo>/main/.git with sibling worktrees
 _wt_list_all_worktrees() {
   for repo_dir in ${WS_DIR:-~/wealthsimple}/*/; do
-    # Check if this is a git repo (main worktree lives directly in repo_dir)
+    # New structure: main worktree at repo root
     if [[ -d "$repo_dir.git" ]]; then
       git -C "$repo_dir" worktree list --porcelain 2>/dev/null | grep '^worktree ' | awk '{print $2}'
+    # Old structure: main worktree in /main/ subdirectory
+    elif [[ -d "${repo_dir}main/.git" ]]; then
+      git -C "${repo_dir}main" worktree list --porcelain 2>/dev/null | grep '^worktree ' | awk '{print $2}'
     fi
   done
 }
@@ -407,16 +422,23 @@ _wt_map_repo_to_path() {
   local owner="$1"
   local repo="$2"
 
-  # Try direct match first (main is now at repo root)
+  # Try direct match first (new structure: main is at repo root)
   local direct_path="$HOME/$owner/$repo"
   if [[ -d "$direct_path/.git" ]]; then
     echo "$direct_path"
     return 0
   fi
 
+  # Try old structure (main worktree in /main/ subdirectory)
+  local old_path="$HOME/$owner/$repo/main"
+  if [[ -d "$old_path/.git" ]]; then
+    echo "$old_path"
+    return 0
+  fi
+
   # Fallback: FZF picker from all repos (find directories containing .git)
   _wt_yellow "Repo not found at $direct_path"
-  local repos=$(find ${WS_DIR:-~/wealthsimple} -maxdepth 2 -name ".git" -type d 2>/dev/null | xargs -I{} dirname {} | grep -v '/.worktrees/')
+  local repos=$(find ${WS_DIR:-~/wealthsimple} -maxdepth 3 -name ".git" -type d 2>/dev/null | xargs -I{} dirname {} | grep -v '/.worktrees/')
   local selected=$(echo "$repos" | fzf --prompt="Select repo for $owner/$repo: ")
 
   if [[ -z "$selected" ]]; then
@@ -496,8 +518,8 @@ wt() {
 
   if [[ -z "$main_path" ]]; then
     # Not in a repo - let user pick which repo to create in
-    # Main worktrees are now directly at ~/wealthsimple/<repo>/ (contain .git directory)
-    local repos=$(find ${WS_DIR:-~/wealthsimple} -maxdepth 2 -name ".git" -type d 2>/dev/null | xargs -I{} dirname {} | grep -v '/.worktrees/')
+    # Supports both new structure (repo/.git) and old structure (repo/main/.git)
+    local repos=$(find ${WS_DIR:-~/wealthsimple} -maxdepth 3 -name ".git" -type d 2>/dev/null | xargs -I{} dirname {} | grep -v '/.worktrees/')
     local selected=$(echo "$repos" | fzf --prompt="Create '$branch' in which repo? ")
     [[ -z "$selected" ]] && return 0
     main_path="$selected"
