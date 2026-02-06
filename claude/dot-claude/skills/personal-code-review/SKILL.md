@@ -15,6 +15,9 @@ Code review guidance learned from analyzing real PR feedback.
 ## Language-Specific Patterns
 
 
+
+
+- [Kotlin Patterns](kotlin.md)
 - [Ruby Patterns](ruby.md)
 - [Typescript Patterns](typescript.md)
 

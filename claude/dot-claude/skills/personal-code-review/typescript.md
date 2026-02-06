@@ -2,60 +2,64 @@
 
 Jordan focuses on eliminating unnecessary code, avoiding over-mocking in tests, and ensuring consistent patterns across the codebase.
 
-## Test Only Business Logic, Not Constants
-
-**What to look for:** Tests that verify the values of constants, configuration arrays, or static data.
-
-**Why it matters:** Tests should verify behavior and business logic, not that constants equal themselves. Testing constants adds maintenance burden without catching real bugs.
-
-**Example:** Don't test that `AVATAR_COLORS` contains specific strings. Do test functions like `isValidAvatarColor()` that use those constants.
-
 ## Use Generated Mock Helpers
 
-**What to look for:** Hand-written `createMock*` functions that construct test fixtures manually.
+**What to look for:** Hand-written `createMock*` functions, manual object construction with explicit `__typename`, or field-by-field mock definitions.
 
-**Why it matters:** Auto-generated `mock<Entity>` helpers from test-utils libraries stay in sync with schema changes and reduce test maintenance.
+**Why it matters:** Auto-generated `mock<FragmentName>` helpers stay in sync with schema changes, provide sensible defaults, and reduce test maintenance. Custom mocks become stale and require manual updates when schemas evolve.
 
-**Example:** Instead of `const createMockNetWorthAccount = (overrides) => ({...})`, use `mockNetWorthAccount({ source: 'internal', id: 'account-1' })`.
+**Example:** Instead of `{ __typename: 'Account', id: '123', ... }` or custom `createMockNetWorthAccount()`, use `mockNetWorthAccount({ id: '123' })` from test-utils.
 
 ## Avoid Unnecessary Mocking
 
-**What to look for:** `jest.mock()` calls for child components, especially UI components that don't have side effects.
+**What to look for:** `jest.mock()` calls for child components, especially UI components that just return null or a simple div.
 
-**Why it matters:** Mocking child components makes tests brittle and disconnected from real behavior. Only mock components with external dependencies (network, timers, etc.).
+**Why it matters:** Mocking children tests implementation details rather than behavior and reduces test fidelity. Only mock components with external dependencies (network, timers, etc.).
 
-**Example:** Don't mock `<AccountAvatar>` just to render `null`. Let it render naturally unless it causes test failures.
+**Example:** Question whether `jest.mock('../account-avatar.component', () => ({ AccountAvatar: () => null }))` is actually needed before adding it.
 
-## Remove Unnecessary useMemo
+## Remove Unnecessary useMemo/useCallback
 
-**What to look for:** `useMemo` wrapping simple object transformations or calculations that aren't computationally expensive.
+**What to look for:** `useMemo` or `useCallback` wrapping simple object transformations, boolean checks, string formatting, or non-expensive calculations.
 
-**Why it matters:** Premature memoization adds complexity without performance benefits. React re-renders are usually fast enough without memoization.
+**Why it matters:** Premature memoization adds complexity and overhead without benefits. React's rendering is fast enough for most transformations.
 
-**Example:** Simple object mappings like `{ [account.id]: { household: true } }` don't need `useMemo`.
+**Example:** Simple mappings like `{ [account.id]: { household: true } }` or settings object transformations don't need memoization unless profiling shows a bottleneck.
 
-## Remove Fallback Values for Non-Nullable Types
+## Remove Fallbacks for Non-Nullable Types
 
-**What to look for:** Fallback patterns like `identityId ?? ''` when the value is typed as always present.
+**What to look for:** Fallback patterns like `identityId ?? ''` when typed as always present, or type guards for impossible cases.
 
-**Why it matters:** Unnecessary fallbacks obscure type guarantees and can mask real bugs. Trust your types.
+**Why it matters:** Unnecessary fallbacks obscure type guarantees, suggest the types are wrong, and can hide bugs where values are unexpectedly undefined.
 
-**Example:** If `useIdentityId()` returns `string` (not `string | undefined`), use `identityId` directly.
+**Example:** If `useIdentityId()` returns `string` in authenticated contexts, use `identityId` directly without fallbacks.
 
-## Consolidate Related useEffect Hooks
+## Test Business Logic, Not Constants
 
-**What to look for:** Multiple `useEffect` hooks that handle related logic or could be combined.
+**What to look for:** Tests verifying constant values, array lengths of static data, or rendering states without asserting behavioral differences.
 
-**Why it matters:** Separate effects for related logic make code harder to follow and can introduce subtle bugs with dependency arrays.
+**Why it matters:** Tests should verify behavior and transformations, not that constants haven't changed. If a test sets up a special state, it should verify what makes that state different.
 
-## Test Behavioral Differences
+**Example:** Don't test that `AVATAR_COLORS` contains specific strings. Do test `isValidAvatarColor()` that uses those constants.
 
-**What to look for:** Tests that render different states but don't verify the actual behavioral difference.
+## Consolidate Related Logic
 
-**Why it matters:** If a test sets up "accounts that cannot update household," it should verify what's different about that state, not just that it renders.
+**What to look for:** Multiple `useEffect` hooks with related concerns, or multiple state variables tracking mutually exclusive states.
 
-## Clean Up TODO Comments
+**Why it matters:** Scattered effects are harder to follow and can create subtle timing issues. Combining related logic prevents impossible states.
 
-**What to look for:** TODO comments for "temporary logging" or debugging code that made it to review.
+**Example:** Instead of `[showDelete, setShowDelete]`, `[showEdit, setShowEdit]`, use `[activeSheet, setActiveSheet]` with type `'delete' | 'edit' | null`.
 
-**Why it matters:** Debug logging should be removed before merge unless there's a documented reason to keep it.
+## Prefer Derived Values Over Flags
+
+**What to look for:** Boolean props like `isLinked` passed alongside data that already contains that information.
+
+**Why it matters:** Derive from source data rather than passing redundant flags that can become inconsistent.
+
+**Example:** Use `account.source === 'linked'` instead of passing a separate `isLinked` prop.
+
+## Clean Up Debug Code
+
+**What to look for:** TODO comments for "temporary logging" or debug code that made it to review.
+
+**Why it matters:** Debugging artifacts clutter code and can impact performance in production. Remove before merge unless documented.

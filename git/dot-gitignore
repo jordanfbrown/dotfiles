@@ -3,6 +3,7 @@ CLAUDE.local.md
 docs/plans/
 .zsh_secrets
 .agent
+.agents
 .beads
 .claude/settings.local.json
 .worktrees

@@ -17,13 +17,25 @@ Always use Context7 MCP when I need library/API documentation, code generation, 
 
 ## Browser Automation
 
-Use `npx agent-browser` for web automation. Run `npx agent-browser --help` for all commands.
+Use `agent-browser` for web automation. Run `agent-browser --help` for all commands.
 
 Core workflow:
-1. `npx agent-browser open <url>` - Navigate to page
-2. `npx agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
-3. `npx agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
+1. `agent-browser open <url>` - Navigate to page
+2. `agent-browser snapshot -i` - Get interactive elements with refs (@e1, @e2)
+3. `agent-browser click @e1` / `fill @e2 "text"` - Interact using refs
 4. Re-snapshot after page changes
+
+## Issue Tracking
+
+We track our tickets and projects in Linear (https://linear.app), a project management tool. We use the linear MCP tool for communicating with Linear.
+
+The ticket numbers follow the format "HHMM-<number>" (our team is HHMM, Household & Money Management). Always reference tickets by their number.
+
+If you create a ticket, and it's not clear which project to assign it to, prompt the user. When creating subtasks, use the project of the parent ticket by default.
+
+When the the status of a task in the ticket description has changed (task → task done), update the description accordingly. When updating a ticket with a progress report that is more than just a checkbox change, add that report as a ticket comment.
+
+When writing tickets, always have 2 sections: "Context" (explain the why) and "Acceptance Criteria" (explain the what).
 
 ## Common Commands to Check First
 When working on a project, always check for these common commands:

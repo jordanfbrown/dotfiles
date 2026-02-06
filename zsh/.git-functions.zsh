@@ -2,53 +2,28 @@
 # Worktree management, branch cleanup, and other git utilities
 
 # =============================================================================
-# CONTEXT WINDOWS (cc command)
+# SCRATCH SESSION (cc command)
 # =============================================================================
 
-# cc - Create or switch to a context window for non-worktree Claude tasks
-# Usage: cc <context>
-#   cc ops      - Datadog, debugging, incidents
-#   cc plan     - Architecture, design thinking
-#   cc admin    - Jira grooming, small PR reviews
-#   cc scratch  - Ephemeral one-offs
+# cc - Create or switch to scratch session for one-off Claude tasks
 cc() {
-  local context="$1"
-  local valid_contexts=("ops" "plan" "admin" "scratch")
+  local dir="$HOME/scratch"
+  local window="@scratch"
 
-  # Require tmux
-  if [[ -z "$TMUX" ]]; then
-    _wt_red "Error: This command requires tmux. Run inside a tmux session."
-    return 1
-  fi
+  mkdir -p "$dir"
 
-  # Validate or show usage
-  if [[ -z "$context" ]]; then
-    _wt_yellow "Usage: cc <context>"
-    _wt_yellow "Contexts: ops, plan, admin, scratch"
-    return 1
-  fi
-
-  if [[ ! " ${valid_contexts[@]} " =~ " $context " ]]; then
-    _wt_red "Invalid context: $context"
-    _wt_yellow "Valid contexts: ops, plan, admin, scratch"
-    return 1
-  fi
-
-  local window_name="@$context"
-  local context_dir="$HOME/contexts/$context"
-
-  # Create context directory if needed
-  mkdir -p "$context_dir"
-
-  # Switch or create tmux window
-  if tmux list-windows -F '#{window_name}' | grep -qx "$window_name"; then
-    tmux select-window -t "$window_name"
+  if [[ -n "$TMUX" ]]; then
+    if tmux list-windows -F '#{window_name}' | grep -qx "$window"; then
+      tmux select-window -t "$window"
+    else
+      tmux new-window -n "$window" -c "$dir"
+      tmux split-window -v -c "$dir"
+      tmux select-pane -t 0
+      tmux send-keys 'c' Enter
+      tmux select-pane -t 1
+    fi
   else
-    tmux new-window -n "$window_name" -c "$context_dir"
-    tmux split-window -v -c "$context_dir"
-    tmux select-pane -t 0
-    tmux send-keys 'c' Enter  # Start claude
-    tmux select-pane -t 1
+    cd "$dir" && c
   fi
 }
 

@@ -168,7 +168,7 @@ wtf() {
   fi
 }
 
-LLM_API_KEY() { 
+LLM_API_KEY() {
   echo "$(op read op://Employee/LLM_API_KEY/credential)"
 }
 
@@ -193,12 +193,12 @@ aws-creds() {
 wsc() {
   local app_name=$(basename "$PWD")
   local branch_name=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-  
+
   if [[ -z "$branch_name" ]]; then
     echo "Error: Not in a git repository or unable to determine current branch"
     return 1
   fi
-  
+
   echo "Creating sandbox for application: $app_name, branch: $branch_name"
   ws sandbox create -a "$app_name" -b "$branch_name"
 }
@@ -208,15 +208,15 @@ wsc() {
 # =============================================================================
 gcj() {
   local ticket_id="$1"
-  
+
   if [[ -z "$ticket_id" ]]; then
     local branch_name=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-    
+
     if [[ -n "$branch_name" ]]; then
       ticket_id=$(echo "$branch_name" | grep -oiE '[a-z]+-[0-9]+' | head -1)
     fi
   fi
-  
+
   if [[ -n "$ticket_id" ]]; then
     echo "Using Jira ticket: $ticket_id"
     JIRA_API_KEY=$(op read op://Employee/JIRA_API_KEY/credential) $WS_SCRIPTS/git_commit_jira/commit_from_jira.rb "$ticket_id"
@@ -258,7 +258,7 @@ nxa() {
   local parallelism=8
   local branchForkWithMain=`git merge-base --fork-point main HEAD`
 
-  if [[ "$1" = "test" ]]; then 
+  if [[ "$1" = "test" ]]; then
     parallelism=1
   fi
 
